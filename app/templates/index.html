@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="grid place-content-center my-60">
+    <div class="max-w-3xl">
+        {% include "search_bar.html" %}
+
+        <div class="my-5 flex flex-wrap">
+            <a href="/?question=Who+was+the+first+president+of+USA%3F" class="border border-slate-400 m-2 rounded-md p-3 font-bold bg-slate-300 hover:bg-slate-400">Who was the first president of USA?</a>
+            <a href="/?question=The+capital+of+France%3F" class="border border-slate-400 m-2 rounded-md p-3 font-bold bg-slate-300 hover:bg-slate-400">The capital of France?</a>
+            <a href="/?question=What+is+Ellen+Swallow+Richards's+nationality%3F" class="border border-slate-400 m-2 rounded-md p-3 font-bold bg-slate-300 hover:bg-slate-400">What is Ellen Swallow Richards's nationality?</a>
+            <!-- <a href="/?question=Who+wrote+the+music+for+gangs+of+new+york%3F" class="border border-slate-400 m-2 rounded-md p-3 font-bold bg-slate-300 hover:bg-slate-400">Who wrote the music for gangs of new york?</a> -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
