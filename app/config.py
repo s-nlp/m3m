@@ -8,6 +8,9 @@ seq2seq = {
         ),
         "route_postfix": "sqwd_tunned/t5_large_ssm_nq",
     },
-    "examples": [
-    ],
+    "examples": [],
 }
+
+
+DEFAULT_CACHE_PATH = "/tmp/"
+DEFAULT_LRU_CACHE_MAXSIZE = 8192

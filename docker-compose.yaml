@@ -7,7 +7,15 @@ services:
     volumes:
       - /home/salnikov/data_kbqa/seq2seq_runs/:/data/seq2seq/
       - /home/salnikov/qa_prod/app:/code/app
-
+    environment:
+      - TOKENIZERS_PARALLELISM=false
+    deploy:
+      resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                device_ids: ["5"]
+                capabilities: [gpu]
 
   # serve:
   #   image: "pytorch/torchserve:latest-gpu"

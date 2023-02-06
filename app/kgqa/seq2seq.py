@@ -55,13 +55,12 @@ class Seq2SeqPipeline(Pipeline):
         return list(dict.fromkeys(candidates))
 
 
-def build_seq2seq_pipeline(
-    model_path: str,
-) -> Seq2SeqPipeline:
+def build_seq2seq_pipeline(model_path: str, device="cpu") -> Seq2SeqPipeline:
     model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     pipeline = Seq2SeqPipeline(
         model=model,
         tokenizer=tokenizer,
+        device=device,
     )
     return pipeline
