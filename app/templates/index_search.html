@@ -8,39 +8,148 @@
 
 <!-- <div class="container max-w-2xl md:mx-auto my-10 py-5 flex place-content-center"> -->
 
-<div class="flex">
-    <div class="flex-none pl-1 sm:pl-[8.65rem]">
+<div class="flex min-h-screen">
+    <div class="flex-none pl-1 sm:pl-[6.65rem] md:mr-16">
         <div class="mt-7 py-3">
-            <div href="#" id="top_answer_card" class="mb-7 flex flex-col items-center bg-white border border-gray-200 rounded-lg shadow md:flex-row md:max-w-xl dark:border-gray-700 dark:bg-gray-800">
-                {{question}}
-                {{pipeline}}
+            <div href="#" id="top_answer_card" class="mb-7 flex flex-col bg-white border border-gray-200 rounded-lg shadow md:flex-row md:max-w-xl dark:border-gray-700 dark:bg-gray-800 sm:ml-[2rem] md:w-[50rem]">
+                
+                <svg class="animate-spin h-5 w-5 mr-3 w-full my-5" id="top_answer_loading" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                
             </div>
         </div>
+
+        <div class="grid grid-flow-row auto-rows-max" id="qa_answers_list">
+        </div>
     </div>
+
+
+
     <div class="flex-auto w-auto bg-slate-100">
         <!-- DETAILS -->
-
         <!-- END DETAILS -->
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.3.js" integrity="sha256-nQLuAZGRRcILA+6dMBOvcRh5Pe310sBpanc6+QBmyVM=" crossorigin="anonymous"></script>
     <script>
+        function description_to_html(description) {
+            if (description != null) {
+                return description.join('<br>');
+            } else {
+                return "";
+            }
+        }
+
+
+        function loading_spinner() {
+            return jQuery(
+                '<svg class="animate-spin h-5 w-5 mr-3 w-full my-5" id="loading_spinner" viewBox="0 0 24 24">' +
+                '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>' +
+                '<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>' +
+                '</svg>'
+            )
+        }
+
+        function getSorted(selector, attrName) {
+            return $($(selector).toArray().sort(function(a, b){
+                var aVal = parseInt(a.getAttribute(attrName)),
+                    bVal = parseInt(b.getAttribute(attrName));
+                return aVal - bVal;
+            }));
+        }
+
         function process_pipeline_data(data) {
             answers = [];
-            data["answers"].forEach(idx => {
+            data["answers"].forEach(function(idx, index, _) {
                 $.ajax({
                     url: '/wikidata/entities/' + idx,
                     method: 'GET',
                     dataType: 'json',
+                    beforeSend: function() {
+                        if ( $( "#loading_spinner" ).length < 1) {
+                            $("#qa_answers_list").append(loading_spinner());
+                        }
+                    },
+                    complete: function() {
+                        $("#loading_spinner").remove();
+                    },
                     success: function(data) {
                         console.log(data);
+
+                        let link_uri = "https://www.wikidata.org/wiki/" + String(data['idx']);
+
+                        if (index == 0) {
+                            $("#top_answer_loading").hide();
+                            if (data['image'].length > 0) {
+                                let img = jQuery('<img>').addClass(
+                                    "object-cover w-full rounded-t-lg h-96 md:h-auto md:w-48 md:rounded-none md:rounded-l-lg"
+                                ).attr(
+                                    "src", decodeURI(data['image'][0])
+                                ).attr(
+                                    "alt", String(data['label'])
+                                )
+                                $("#top_answer_card").append(img);
+                            }
+                            let body = jQuery('<div>').addClass('flex flex-col p-4 leading-normal');
+                            body.append(
+                                jQuery('<a>').addClass('mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white hover:text-blue-600').attr(
+                                    "target", "_blank"
+                                ).attr(
+                                    "href", link_uri
+                                ).append(String(data['label']))
+                            )
+
+                            body.append(
+                                jQuery('<p class="mb-3 py-2 font-normal text-gray-700 dark:text-gray-400">').append(
+                                    description_to_html(data['description'])
+                                )
+                            )
+
+                            $("#top_answer_card").append(body);
+                        }
+
+                        let link = jQuery('<a>').addClass(
+                            "py-1 hover:text-blue-700 mb-5 md:max-w-xl w-[36rem]"
+                        ).attr(
+                            "target", "_blank"
+                        ).attr(
+                            "href", link_uri
+                        );
+                        link.append(
+                            '<span class="italic inline-block py-0.5 text-xs">' + link_uri + '</span><br>' +
+                            '<p class="text-2xl text-blue-600">' + String(data['label']) + '</p>' +
+                            '<p class="text-sm">' + description_to_html(data['description']) + '</p>'
+                        );
+
+                        let answer_block = jQuery('<div class="grid grid-flow-col auto-cols-auto answer_item">').append(
+                            '<span class="text-slate-300 text-2xl w-[2rem]">' + String(index + 1) + '</span>'
+                        ).attr(
+                            'answer-order', String(index + 1)
+                        )
+                        answer_block.append(link);
+
+                        $("#qa_answers_list").append(answer_block);
+                        
+                        let answers = getSorted('.answer_item', 'answer-order');
+                        answers.detach().appendTo($("#qa_answers_list"))
+                        //console.log(answers);
+                        //answers.forEach(function(answer, index, all) {
+                        //   if (index < all.length - 1) {
+                        //        next_answer = all[index + 1];
+                        //        answer.insertBefore(next_answer);
+                        //    }
+                        //})
                     }
                 })
             });
         }
 
+
         $(document).ready(function() {
             $("#top_answer_card");
+            $("#qa_answers_list");
             $.ajax({
                 url: '/pipeline/{{pipeline}}',
                 method: 'POST',

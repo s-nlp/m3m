@@ -7,6 +7,7 @@ services:
     volumes:
       - /home/salnikov/data_kbqa/seq2seq_runs/:/data/seq2seq/
       - /home/salnikov/qa_prod/app:/code/app
+      - /home/salnikov/cache:/root/.cache/
     environment:
       - TOKENIZERS_PARALLELISM=false
     deploy:

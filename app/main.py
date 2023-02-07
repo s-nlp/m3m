@@ -38,14 +38,6 @@ async def index(request: Request, question: str = "", pipeline: str = "seq2seq")
         )
 
 
-# @app.get(f"/wikidata/label_to_entity")
-# async def label_to_entity(label: str):
-#     try:
-#         return [e.idx for e in Entity.from_label(label)]
-#     except:
-#         raise HTTPException(status_code=404, detail="Entity not found")
-
-
 @app.get("/wikidata/entities/{idx}")
 async def entity_details(idx: str) -> EntityResponce:
     entity = Entity(idx)

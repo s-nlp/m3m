@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Dict, List
 
+import torch
 from fastapi import APIRouter
 from joblib import Parallel, delayed
 from pywikidata import Entity
@@ -16,14 +17,16 @@ router = APIRouter(
     tags=["pipeline", "seq2seq"],
 )
 
-# seq2seq = build_seq2seq_pipeline(seq2seq_config["model"]["path"])
-seq2seq = lambda q: ["Donald Trump", "NY"]
+seq2seq = build_seq2seq_pipeline(
+    seq2seq_config["model"]["path"],
+    torch.device(seq2seq_config["device"]),
+)
 
 
 @lru_cache(maxsize=1024)
 @router.post("/")
 def seq2seq_pipeline(question: QuestionRequest) -> PipelineResponce:
-    seq2seq_results = seq2seq(question)
+    seq2seq_results = seq2seq(question.text)
 
     def _label_to_entity(label):
         try:
@@ -34,6 +37,7 @@ def seq2seq_pipeline(question: QuestionRequest) -> PipelineResponce:
     corr_entities = Parallel(n_jobs=-2)(
         delayed(_label_to_entity)(label) for label in seq2seq_results
     )
+    corr_entities = [e for e in corr_entities if e is not None]
 
     results = []
     for _, entities in zip(seq2seq_results, corr_entities):

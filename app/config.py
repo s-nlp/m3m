@@ -9,6 +9,7 @@ seq2seq = {
         "route_postfix": "sqwd_tunned/t5_large_ssm_nq",
     },
     "examples": [],
+    "device": "cuda:0",
 }
 
 
