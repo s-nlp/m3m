@@ -25,7 +25,7 @@ class EntitiesSelection:
                 for label in labels:
                     label = label.lower()
                     if self._check_label_fn(label, entities_list):
-                        final_preds.append(pred_text)
+                        final_preds.append(label)
 
         return final_preds
 

@@ -190,14 +190,14 @@ class QuestionToRankInstanceOf(_QuestionToRankBase):
             selected_set = []
             for q_entity in self.question_entities:
                 if self.only_forward_one_hop:
-                    neighbors = q_entity.forward_one_hop_neighbors
+                    neighbours = q_entity.forward_one_hop_neighbours
                 else:
-                    neighbors = (
-                        q_entity.forward_one_hop_neighbors
-                        + q_entity.backward_one_hop_neighbors
+                    neighbours = (
+                        q_entity.forward_one_hop_neighbours
+                        + q_entity.backward_one_hop_neighbours
                     )
 
-                for property, entity in neighbors:
+                for property, entity in neighbours:
                     property_question_intersection_score = QuestionToRankInstanceOf._calculate_property_question_intersection_score(
                         property,
                         self.question,
@@ -211,10 +211,10 @@ class QuestionToRankInstanceOf(_QuestionToRankBase):
                             len(self.answer_instance_of) - instance_of_score
                         ) / len(self.answer_instance_of)
                     # ---
-                    if (property, entity) in q_entity.forward_one_hop_neighbors:
-                        forward_one_hop_neighbors_score = 1
+                    if (property, entity) in q_entity.forward_one_hop_neighbours:
+                        forward_one_hop_neighbours_score = 1
                     else:
-                        forward_one_hop_neighbors_score = 0
+                        forward_one_hop_neighbours_score = 0
 
                     # ---
                     if entity in self.answers_candidates:
@@ -231,7 +231,7 @@ class QuestionToRankInstanceOf(_QuestionToRankBase):
                             property,
                             entity,
                             instance_of_score,
-                            forward_one_hop_neighbors_score,
+                            forward_one_hop_neighbours_score,
                             answers_candidates_score,
                             property_question_intersection_score,
                         )

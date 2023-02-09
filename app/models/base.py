@@ -17,3 +17,11 @@ class Entity(BaseModel):
 
 class PipelineResponce(BaseModel):
     answers: list[str]
+
+
+class ACTPipelineResponce(PipelineResponce):
+    answers_candidates: list[str]
+    answer_instance_of: list[str]
+    answer_instance_of_count: dict[str, int]
+    question_entities: list[str]
+

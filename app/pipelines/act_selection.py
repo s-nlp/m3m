@@ -8,9 +8,10 @@ from app.kgqa.act_selection import QuestionToRankInstanceOf
 from app.kgqa.entity_linking import EntitiesSelection
 from app.kgqa.mgenre import build_mgenre_pipeline
 from app.kgqa.ner import NerToSentenceInsertion
+from app.kgqa.utils import label_to_entity_idx
 from app.models.base import Entity as EntityResponce
-from app.models.base import PipelineResponce
 from app.models.base import Question as QuestionRequest
+from app.models.base import ACTPipelineResponce
 from app.pipelines.seq2seq import seq2seq
 
 ner = NerToSentenceInsertion("/data/ner/")
@@ -22,10 +23,6 @@ router = APIRouter(
     prefix="/pipeline/act_selection",
     tags=["pipeline", "act_selection"],
 )
-
-
-class ACTPipelineResponce(PipelineResponce):
-    type: list[str]
 
 
 @router.post("/ner")
@@ -58,36 +55,32 @@ def raw_seq2seq(question: str) -> list[str]:
 @lru_cache(maxsize=1024)
 @router.post("/")
 def pipeline(question: QuestionRequest) -> ACTPipelineResponce:
-    question_wit_ner, all_question_entities = ner.entity_labeling(question, True)
+    question_wit_ner, all_question_entities = ner.entity_labeling(question.text, True)
     mgenre_predicted_entities = mgenre(question_wit_ner)
     question_entities = entity_selection(
         all_question_entities, mgenre_predicted_entities
     )
-    seq2seq_results = seq2seq(question)
+    question_entities = [label_to_entity_idx(label) for label in question_entities]
+    question_entities = [idx for idx in question_entities if idx is not None]
 
-    def _label_to_entity(label):
-        try:
-            return [e.idx for e in Entity.from_label(label)]
-        except:
-            pass
-
-    corr_entities = Parallel(n_jobs=-2)(
-        delayed(_label_to_entity)(label) for label in seq2seq_results
+    seq2seq_results = seq2seq(question.text)
+    answers_candidates = Parallel(n_jobs=-2)(
+        delayed(label_to_entity_idx)(label) for label in seq2seq_results
     )
-    answers_candidates = []
-    for _, entities in zip(seq2seq_results, corr_entities):
-        idx = list(sorted(entities, key=lambda idx: int(idx[1:])))[0]
-        answers_candidates.append(idx)
+    answers_candidates = [e for e in answers_candidates if e is not None]
 
     question_to_rank = QuestionToRankInstanceOf(
-        question=question,
+        question=question.text,
         question_entities=question_entities,
         answers_candidates=answers_candidates,
         only_forward_one_hop=True,
     )
-    answers = question_to_rank.final_answers()
+    answers = question_to_rank.final_answers()[:100]
 
     return ACTPipelineResponce(
         answers={a[1].idx for a in answers},
-        type=[e.idx for e in question_to_rank.answer_instance_of],
+        answers_candidates=[e.idx for e in question_to_rank.answers_candidates],
+        answer_instance_of=[e.idx for e in question_to_rank.answer_instance_of],
+        answer_instance_of_count={e.idx:int(count) for e, count in question_to_rank.answer_instance_of_count},
+        question_entities=[e.idx for e in question_to_rank.question_entities],
     )

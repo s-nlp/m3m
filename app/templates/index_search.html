@@ -41,8 +41,8 @@
                 return "";
             }
         }
-
-
+        
+        
         function loading_spinner() {
             return jQuery(
                 '<svg class="animate-spin h-5 w-5 mr-3 w-full my-5" id="loading_spinner" viewBox="0 0 24 24">' +
@@ -51,7 +51,7 @@
                 '</svg>'
             )
         }
-
+        
         function getSorted(selector, attrName) {
             return $($(selector).toArray().sort(function(a, b){
                 var aVal = parseInt(a.getAttribute(attrName)),
@@ -59,7 +59,7 @@
                 return aVal - bVal;
             }));
         }
-
+        
         function process_pipeline_data(data) {
             answers = [];
             data["answers"].forEach(function(idx, index, _) {
@@ -76,13 +76,11 @@
                         $("#loading_spinner").remove();
                     },
                     success: function(data) {
-                        console.log(data);
-
                         let link_uri = "https://www.wikidata.org/wiki/" + String(data['idx']);
-
+        
                         if (index == 0) {
                             $("#top_answer_loading").hide();
-                            if (data['image'].length > 0) {
+                            if (data['image'] != null) {
                                 let img = jQuery('<img>').addClass(
                                     "object-cover w-full rounded-t-lg h-96 md:h-auto md:w-48 md:rounded-none md:rounded-l-lg"
                                 ).attr(
@@ -100,16 +98,16 @@
                                     "href", link_uri
                                 ).append(String(data['label']))
                             )
-
+        
                             body.append(
                                 jQuery('<p class="mb-3 py-2 font-normal text-gray-700 dark:text-gray-400">').append(
                                     description_to_html(data['description'])
                                 )
                             )
-
+        
                             $("#top_answer_card").append(body);
                         }
-
+        
                         let link = jQuery('<a>').addClass(
                             "py-1 hover:text-blue-700 mb-5 md:max-w-xl w-[36rem]"
                         ).attr(
@@ -122,34 +120,24 @@
                             '<p class="text-2xl text-blue-600">' + String(data['label']) + '</p>' +
                             '<p class="text-sm">' + description_to_html(data['description']) + '</p>'
                         );
-
+        
                         let answer_block = jQuery('<div class="grid grid-flow-col auto-cols-auto answer_item">').append(
                             '<span class="text-slate-300 text-2xl w-[2rem]">' + String(index + 1) + '</span>'
                         ).attr(
                             'answer-order', String(index + 1)
                         )
                         answer_block.append(link);
-
+        
                         $("#qa_answers_list").append(answer_block);
                         
                         let answers = getSorted('.answer_item', 'answer-order');
                         answers.detach().appendTo($("#qa_answers_list"))
-                        //console.log(answers);
-                        //answers.forEach(function(answer, index, all) {
-                        //   if (index < all.length - 1) {
-                        //        next_answer = all[index + 1];
-                        //        answer.insertBefore(next_answer);
-                        //    }
-                        //})
                     }
                 })
             });
         }
 
-
         $(document).ready(function() {
-            $("#top_answer_card");
-            $("#qa_answers_list");
             $.ajax({
                 url: '/pipeline/{{pipeline}}',
                 method: 'POST',
