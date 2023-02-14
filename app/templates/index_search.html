@@ -41,6 +41,20 @@
                 return "";
             }
         }
+
+        function instance_of_to_html(instance_of) {
+            console.log(instance_of);
+            if (instance_of != null) {
+                result = "";
+                instance_of.forEach(function (val, idx, all) {
+                    let link_uri = "https://www.wikidata.org/wiki/" + String(val[0]);
+                    result += '<a href="' + link_uri + '" target="_blank" style="display:inline-block" class="hover:underline hover:bg-purple-200 my-1 bg-purple-100 text-purple-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-purple-900 dark:text-purple-300">' + String(val[1]) + '(' + String(val[0]) + ')' + '</a>';
+                })
+                return result;
+            } else {
+                return "";
+            }
+        }
         
         
         function loading_spinner() {
@@ -67,6 +81,7 @@
                     url: '/wikidata/entities/' + idx,
                     method: 'GET',
                     dataType: 'json',
+                    cache: true,
                     beforeSend: function() {
                         if ( $( "#loading_spinner" ).length < 1) {
                             $("#qa_answers_list").append(loading_spinner());
@@ -104,12 +119,17 @@
                                     description_to_html(data['description'])
                                 )
                             )
+                            body.append(
+                                jQuery('<p>').append(
+                                    instance_of_to_html(data['instance_of'])
+                                )
+                            )
         
                             $("#top_answer_card").append(body);
                         }
         
                         let link = jQuery('<a>').addClass(
-                            "py-1 hover:text-blue-700 mb-5 md:max-w-xl w-[36rem]"
+                            "p-1 hover:text-blue-700 mb-5 md:max-w-xl w-[36rem] hover:bg-gray-50"
                         ).attr(
                             "target", "_blank"
                         ).attr(
@@ -118,7 +138,7 @@
                         link.append(
                             '<span class="italic inline-block py-0.5 text-xs">' + link_uri + '</span><br>' +
                             '<p class="text-2xl text-blue-600">' + String(data['label']) + '</p>' +
-                            '<p class="text-sm">' + description_to_html(data['description']) + '</p>'
+                            '<p class="text-sm">' + description_to_html(data['description']) + '<br>' + instance_of_to_html(data['instance_of']) + '</p>'
                         );
         
                         let answer_block = jQuery('<div class="grid grid-flow-col auto-cols-auto answer_item">').append(
@@ -137,13 +157,24 @@
             });
         }
 
+        function pipeline_switcher(pipeline_name) {
+            if (pipeline_name == 'seq2seq') {
+                return 'seq2seq'
+            } else if (pipeline_name == 'act_selection') {
+                return 'act_selection/main'
+            } else if (pipeline_name == 'act_selection_simple') {
+                return 'act_selection/simple_type_selection'
+            }
+        }
+
         $(document).ready(function() {
             $.ajax({
-                url: '/pipeline/{{pipeline}}',
+                url: '/pipeline/' + pipeline_switcher('{{pipeline}}'),
                 method: 'POST',
                 data: JSON.stringify({text: '{{question}}'}),
                 contentType: "application/json; charset=utf-8",
                 dataType: 'json',
+                cache: true,
                 success: function (data) {
                     process_pipeline_data(data);
                 },

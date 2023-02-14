@@ -157,7 +157,7 @@ class QuestionToRankInstanceOf(_QuestionToRankBase):
             return [e for e, _ in answer_instance_of_count]
 
         sentence_embeddings = QuestionToRankInstanceOf._calculate_sent_scores(
-            (str(e.label) for e, _ in answer_instance_of_count)
+            tuple([str(e.label) for e, _ in answer_instance_of_count])
         )
         scores_collection = cosine_similarity(
             sentence_embeddings[:initial_number], sentence_embeddings[initial_number:]
@@ -204,7 +204,7 @@ class QuestionToRankInstanceOf(_QuestionToRankBase):
                     )
 
                     instance_of_score = len(
-                        set(entity.instance_of).intersection(self.answer_instance_of)
+                        set(entity.instance_of).intersection(list(self.answer_instance_of))
                     )
                     if instance_of_score > 0:
                         instance_of_score = (
@@ -244,7 +244,7 @@ class QuestionToRankInstanceOf(_QuestionToRankBase):
                 ) / count
 
                 instance_of_score = len(
-                    set(entity.instance_of).intersection(self.answer_instance_of)
+                    set(entity.instance_of).intersection(list(self.answer_instance_of))
                 )
                 if instance_of_score > 0:
                     instance_of_score = (
@@ -258,4 +258,46 @@ class QuestionToRankInstanceOf(_QuestionToRankBase):
             selected_set = sorted(selected_set, key=lambda x: -sum(x[2:]))
             self._final_answers = selected_set
 
-        return self._final_answers
+        return list(self._final_answers)
+
+
+class QuestionToRankInstanceOfSimple(QuestionToRankInstanceOf):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    def _select_answer_instance_of(
+        self, answer_instance_of_count: List[Tuple[Entity, int]]
+    ) -> List[Entity]:
+        initial_number = 3
+
+        if len(answer_instance_of_count) == 0:
+            return []
+
+        selected_entities = []
+        prev_count = answer_instance_of_count[0][1]
+        for entity, count in answer_instance_of_count[:initial_number]:
+            if prev_count - count > prev_count // 2:
+                break
+            selected_entities.append(entity)
+
+        return selected_entities
+
+    def _calculate_answer_instance_of(self):
+        if self._answer_instance_of is None or self._answer_instance_of_count is None:
+            self._answer_instance_of_count = defaultdict(float)
+            for answer_entity in self.answers_candidates:
+                for instance_of_entity in answer_entity.instance_of:
+                    self._answer_instance_of_count[instance_of_entity] += 1
+
+            self._answer_instance_of_count = sorted(
+                self._answer_instance_of_count.items(), key=lambda v: -v[1]
+            )
+            self._answer_instance_of_count = [
+                (key, val)
+                for key, val in self._answer_instance_of_count
+                if key.idx not in INSTANCE_OF_IDX_BLACKLIST + ['Q22808320']
+            ]
+
+            self._answer_instance_of = self._select_answer_instance_of(
+                self._answer_instance_of_count
+            )

@@ -10,7 +10,7 @@ class Question(BaseModel):
 class Entity(BaseModel):
     idx: str
     label: Optional[str]
-    instance_of: Optional[str]
+    instance_of: Optional[list[tuple[str, str]]]
     description: Optional[list[str]]
     image: Optional[list[str]]
 
@@ -19,9 +19,21 @@ class PipelineResponce(BaseModel):
     answers: list[str]
 
 
+class EntityNeighboursResponce(BaseModel):
+    entity: str
+    property: str
+
+class QuestionEntitiesResponce(BaseModel):
+    entity: str
+    neighbours: list[EntityNeighboursResponce]
+
 class ACTPipelineResponce(PipelineResponce):
+    instance_of_score: list[float]
+    forward_one_hop_neighbours_score: list[float]
+    answers_candidates_score: list[float]
+    property_question_intersection_score: list[float]
     answers_candidates: list[str]
     answer_instance_of: list[str]
     answer_instance_of_count: dict[str, int]
-    question_entities: list[str]
+    question_entities: list[QuestionEntitiesResponce]
 

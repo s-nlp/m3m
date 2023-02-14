@@ -46,4 +46,11 @@ async def entity_details(idx: str) -> EntityResponce:
         label=entity.label,
         description=entity.description,
         image=entity.image,
+        instance_of=[(e.idx, e.label) for e in entity.instance_of],
     )
+
+
+# @app.get("/wikidata/entities/{idx}/label")
+# async def entity_label(idx: str) -> str:
+#     entity = Entity(idx)
+#     return entity.label
