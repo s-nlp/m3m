@@ -8,6 +8,7 @@ services:
       - /home/salnikov/data_kbqa/seq2seq_runs/:/data/seq2seq/
       - /home/salnikov/qa_prod/app:/code/app
       - /home/salnikov/cache:/root/.cache/
+      - /home/salnikov/data/m3m:/data/m3m
     environment:
       - TOKENIZERS_PARALLELISM=false
     deploy:
@@ -15,7 +16,7 @@ services:
           reservations:
             devices:
               - driver: nvidia
-                device_ids: ["5"]
+                device_ids: ["1"]
                 capabilities: [gpu]
 
   # serve:

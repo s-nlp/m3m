@@ -37,3 +37,7 @@ class ACTPipelineResponce(PipelineResponce):
     answer_instance_of_count: dict[str, int]
     question_entities: list[QuestionEntitiesResponce]
 
+class M3MPipelineResponce(PipelineResponce):
+    scores: list[float]
+    uncertenity: float
+

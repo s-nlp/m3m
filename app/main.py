@@ -6,7 +6,8 @@ from fastapi.staticfiles import StaticFiles
 
 from pywikidata import Entity
 
-from app.pipelines import act_selection, seq2seq
+from app.kgqa.m3m import M3MQA, EncoderBERT
+from app.pipelines import act_selection, seq2seq, m3m
 from app.models.base import Entity as EntityResponce
 
 app = FastAPI()
@@ -16,6 +17,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.include_router(act_selection.router)
 app.include_router(seq2seq.router)
+app.include_router(m3m.router)
 
 
 @app.get("/", response_class=HTMLResponse)

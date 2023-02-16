@@ -14,5 +14,6 @@ COPY ./app /code/app
 COPY ./data /data/
 
 RUN python3 -c "import nltk; nltk.download('stopwords')"
+RUN python3 -m spacy download ru_core_news_sm
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
