@@ -29,6 +29,9 @@
 
     <div class="flex-auto w-auto bg-slate-100">
         <!-- DETAILS -->
+        <div class="m-2" id="details">
+
+        </div>
         <!-- END DETAILS -->
     </div>
 
@@ -41,14 +44,17 @@
                 return "";
             }
         }
+        
+        function one_instace_of_to_html(identifier, label) {
+            let link_uri = "https://www.wikidata.org/wiki/" + String(identifier);
+            return '<a href="' + link_uri + '" target="_blank" style="display:inline-block" class="hover:underline hover:bg-purple-200 my-1 bg-purple-100 text-purple-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-purple-900 dark:text-purple-300">' + String(identifier) + ' (' + String(label) + ')' + '</a>';
+        }
 
         function instance_of_to_html(instance_of) {
-            console.log(instance_of);
             if (instance_of != null) {
                 result = "";
                 instance_of.forEach(function (val, idx, all) {
-                    let link_uri = "https://www.wikidata.org/wiki/" + String(val[0]);
-                    result += '<a href="' + link_uri + '" target="_blank" style="display:inline-block" class="hover:underline hover:bg-purple-200 my-1 bg-purple-100 text-purple-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-purple-900 dark:text-purple-300">' + String(val[1]) + '(' + String(val[0]) + ')' + '</a>';
+                    result += one_instace_of_to_html(val[0], val[1]);
                 })
                 return result;
             } else {
@@ -65,7 +71,7 @@
                 '</svg>'
             )
         }
-        
+
         function getSorted(selector, attrName) {
             return $($(selector).toArray().sort(function(a, b){
                 var aVal = parseInt(a.getAttribute(attrName)),
@@ -75,6 +81,68 @@
         }
         
         function process_pipeline_data(data) {
+            const queryString = window.location.search;
+            const urlParams = new URLSearchParams(queryString);
+            const pipeline = urlParams.get('pipeline');
+
+            if (pipeline == 'act_selection' || pipeline == 'act_selection_simple') {
+                console.log(data);
+                
+                question_entities = $(document.createElement('div'));
+                question_entities.append('Question entities: ');
+                data['question_entities'].forEach(obj => {
+                    let entity_idx = obj['entity'];
+                    $.ajax({
+                        url: 'wikidata/entities/' + entity_idx + '/label',
+                        method: 'GET',
+                        dataType: 'json',
+                        cache: true,
+                        success: function(edata) {
+                            question_entities.append(one_instace_of_to_html(entity_idx, edata['label']));
+                        } 
+                    })
+                });
+                $("#details").append(question_entities);
+
+                answer_instance_of = $('<div class="m-1">Final Instance Of: </div>');
+                answer_instance_of_count = $('<table class="table-auto"></table>');
+                th = $(document.createElement('thead'))
+                th.append('<tr class="border-b"><th>Instance Of Entity</th><th>Count</th></tr>');
+                answer_instance_of_count.append(th);
+                answer_instance_of_count_body = $("<tbody></tbody>");
+                answer_instance_of_count.append(answer_instance_of_count_body);
+
+                $("#details").append(answer_instance_of);
+                $("#details").append(answer_instance_of_count);
+
+                Object.entries(data['answer_instance_of_count']).forEach(function(entry, idx, _) {
+                    const [entity_idx, count] = entry;
+                    $.ajax({
+                        url: 'wikidata/entities/' + entity_idx + '/label',
+                        method: 'GET',
+                        dataType: 'json',
+                        cache: true,
+                        success: function(edata) {
+                            tr = $(document.createElement('tr'));
+                            tr.addClass('border-b');
+                            tr.addClass('answer_instance_of_item');
+                            tr.append("<td>" + one_instace_of_to_html(entity_idx, edata['label']) + "</td>");
+                            tr.append("<td>" + String(count) + "</td>");
+                            tr.attr('order', 10000000 - count);
+                            answer_instance_of_count_body.append(tr);
+                            
+                            if (data['answer_instance_of'].includes(entity_idx)) {
+                                answer_instance_of.append(one_instace_of_to_html(entity_idx, edata['label'])); 
+                            }
+                        },
+                        complete: function(edata) {
+                            let instance_of_count_objcts = getSorted('.answer_instance_of_item', 'order');
+                            instance_of_count_objcts.detach().appendTo(answer_instance_of_count_body);
+                        }
+                    })
+                });
+            }
+
             answers = [];
             data["answers"].forEach(function(idx, index, _) {
                 $.ajax({

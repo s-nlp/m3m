@@ -52,7 +52,10 @@ async def entity_details(idx: str) -> EntityResponce:
     )
 
 
-# @app.get("/wikidata/entities/{idx}/label")
-# async def entity_label(idx: str) -> str:
-#     entity = Entity(idx)
-#     return entity.label
+@app.get("/wikidata/entities/{idx}/label")
+async def entity_label(idx: str) -> EntityResponce:
+    entity = Entity(idx)
+    return EntityResponce(
+        idx=entity.idx,
+        label=entity.label,
+    )
