@@ -8,59 +8,251 @@
 
 <!-- <div class="container max-w-2xl md:mx-auto my-10 py-5 flex place-content-center"> -->
 
-<div class="flex">
-    <div class="flex-none">
-        <div class="mt-7 py-3 pl-40 pr-20">
-            
-            <div href="#" class="mb-7 flex flex-col items-center bg-white border border-gray-200 rounded-lg shadow md:flex-row md:max-w-xl dark:border-gray-700 dark:bg-gray-800">
-                {% if final_answers[0].image %}
-                    <img class="object-cover w-full rounded-t-lg h-96 md:h-auto md:w-48 md:rounded-none md:rounded-l-lg" src="{{ final_answers[0].image[0] }}" alt="{{ final_answers[0].label }}">
-                {% endif %}
-                <div class="flex flex-col justify-between p-4 leading-normal">
-                    <a href="https://www.wikidata.org/wiki/{{final_answers[0].idx}}" target=”_blank” class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white hover:text-blue-600">{{ final_answers[0].label }} <span class="text-slate-500 text-lg font-normal">({{ final_answers[0].idx }})</span></a>
-                    <p class="mb-3 py-2 font-normal text-gray-700 dark:text-gray-400">{{ final_answers[0].description[0] if final_answers[0].description.__class__.__name__ == 'list' else '' }}</p>
-                    <div class="">
-                        {% for instance_of in final_answers[0].instance_of %}
-                            <a href="https://www.wikidata.org/wiki/{{instance_of.idx}}" target=”_blank” class="italic inline-block py-0.5 text-sm hover:text-blue-700">{{ instance_of.label }}</a>
-                        {% endfor %}
-                    </div>
-                </div>
+<div class="flex min-h-screen">
+    <div class="flex-none pl-1 sm:pl-[6.65rem] md:mr-16">
+        <div class="mt-7 py-3">
+            <div href="#" id="top_answer_card" class="mb-7 flex flex-col bg-white border border-gray-200 rounded-lg shadow md:flex-row md:max-w-xl dark:border-gray-700 dark:bg-gray-800 sm:ml-[2rem] md:w-[50rem]">
+                
+                <svg class="animate-spin h-5 w-5 mr-3 w-full my-5" id="top_answer_loading" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                
             </div>
-            
-            <div class="grid grid-flow-row auto-rows-max">
-                {% for answer in final_answers %}
-                <a href="https://www.wikidata.org/wiki/{{answer.idx}}" target=”_blank” class="py-1 hover:text-blue-700 mb-5">
-                    <span class="italic inline-block py-0.5 text-xs">https://www.wikidata.org/wiki/{{answer.idx}}</span>
-                    <br>
-                    <p class="text-2xl">{{ answer.label }} <span class="text-base text-gray">({{ answer.idx }})</span></p>
-                    <p class="text-sm">{%if answer.description.__class__.__name__ == 'list'%}{% for desc in answer.description %}{{ desc }}<br>{% endfor %}{% endif %}</p>
-                </a>
-            {% endfor %}
-            </div>
+        </div>
 
+        <div class="grid grid-flow-row auto-rows-max" id="qa_answers_list">
         </div>
     </div>
+
+
+
     <div class="flex-auto w-auto bg-slate-100">
         <!-- DETAILS -->
-        <a class="hover:text-blue-700 italic" data-bs-toggle="collapse" href="#details" role="button" aria-expanded="false" aria-controls="details">
-            Details >>
-        </a>
-        <div class="collapse" id="details">
-            <div class="grid grid-flow-col auto-cols-max block rounded-lg shadow-lg bg-white p-5">
-                <div>
-                    <h1 class="text-lg font-bold w-full">Seq2Seq results</h1>
-                    <div class="flex">
-                        {% for answer_entity in seq2seq_answers %}
-                            <a href="https://www.wikidata.org/wiki/{{answer_entity.idx}}" target=”_blank” class="border border-indigo-500 m-1 rounded-md py-3 px-8 text-base font-bold hover:bg-indigo-200">
-                                {{answer_entity.label}} ({{answer_entity.idx}})
-                            </a>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+        <div class="m-2" id="details">
+
         </div>
         <!-- END DETAILS -->
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.3.js" integrity="sha256-nQLuAZGRRcILA+6dMBOvcRh5Pe310sBpanc6+QBmyVM=" crossorigin="anonymous"></script>
+    <script>
+        function description_to_html(description) {
+            if (description != null) {
+                return description.join('<br>');
+            } else {
+                return "";
+            }
+        }
+        
+        function one_instace_of_to_html(identifier, label) {
+            let link_uri = "https://www.wikidata.org/wiki/" + String(identifier);
+            return '<a href="' + link_uri + '" target="_blank" style="display:inline-block" class="hover:underline hover:bg-purple-200 my-1 bg-purple-100 text-purple-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-purple-900 dark:text-purple-300">' + String(identifier) + ' (' + String(label) + ')' + '</a>';
+        }
+
+        function instance_of_to_html(instance_of) {
+            if (instance_of != null) {
+                result = "";
+                instance_of.forEach(function (val, idx, all) {
+                    result += one_instace_of_to_html(val[0], val[1]);
+                })
+                return result;
+            } else {
+                return "";
+            }
+        }
+        
+        
+        function loading_spinner() {
+            return jQuery(
+                '<svg class="animate-spin h-5 w-5 mr-3 w-full my-5" id="loading_spinner" viewBox="0 0 24 24">' +
+                '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>' +
+                '<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>' +
+                '</svg>'
+            )
+        }
+
+        function getSorted(selector, attrName) {
+            return $($(selector).toArray().sort(function(a, b){
+                var aVal = parseInt(a.getAttribute(attrName)),
+                    bVal = parseInt(b.getAttribute(attrName));
+                return aVal - bVal;
+            }));
+        }
+        
+        function process_pipeline_data(data) {
+            const queryString = window.location.search;
+            const urlParams = new URLSearchParams(queryString);
+            const pipeline = urlParams.get('pipeline');
+
+            if (pipeline == 'act_selection' || pipeline == 'act_selection_simple') {
+                console.log(data);
+                
+                question_entities = $(document.createElement('div'));
+                question_entities.append('Question entities: ');
+                data['question_entities'].forEach(obj => {
+                    let entity_idx = obj['entity'];
+                    $.ajax({
+                        url: 'wikidata/entities/' + entity_idx + '/label',
+                        method: 'GET',
+                        dataType: 'json',
+                        cache: true,
+                        success: function(edata) {
+                            question_entities.append(one_instace_of_to_html(entity_idx, edata['label']));
+                        } 
+                    })
+                });
+                $("#details").append(question_entities);
+
+                answer_instance_of = $('<div class="m-1">Final Instance Of: </div>');
+                answer_instance_of_count = $('<table class="table-auto"></table>');
+                th = $(document.createElement('thead'))
+                th.append('<tr class="border-b"><th>Instance Of Entity</th><th>Count</th></tr>');
+                answer_instance_of_count.append(th);
+                answer_instance_of_count_body = $("<tbody></tbody>");
+                answer_instance_of_count.append(answer_instance_of_count_body);
+
+                $("#details").append(answer_instance_of);
+                $("#details").append(answer_instance_of_count);
+
+                Object.entries(data['answer_instance_of_count']).forEach(function(entry, idx, _) {
+                    const [entity_idx, count] = entry;
+                    $.ajax({
+                        url: 'wikidata/entities/' + entity_idx + '/label',
+                        method: 'GET',
+                        dataType: 'json',
+                        cache: true,
+                        success: function(edata) {
+                            tr = $(document.createElement('tr'));
+                            tr.addClass('border-b');
+                            tr.addClass('answer_instance_of_item');
+                            tr.append("<td>" + one_instace_of_to_html(entity_idx, edata['label']) + "</td>");
+                            tr.append("<td>" + String(count) + "</td>");
+                            tr.attr('order', 10000000 - count);
+                            answer_instance_of_count_body.append(tr);
+                            
+                            if (data['answer_instance_of'].includes(entity_idx)) {
+                                answer_instance_of.append(one_instace_of_to_html(entity_idx, edata['label'])); 
+                            }
+                        },
+                        complete: function(edata) {
+                            let instance_of_count_objcts = getSorted('.answer_instance_of_item', 'order');
+                            instance_of_count_objcts.detach().appendTo(answer_instance_of_count_body);
+                        }
+                    })
+                });
+            }
+
+            answers = [];
+            data["answers"].forEach(function(idx, index, _) {
+                $.ajax({
+                    url: '/wikidata/entities/' + idx,
+                    method: 'GET',
+                    dataType: 'json',
+                    cache: true,
+                    beforeSend: function() {
+                        if ( $( "#loading_spinner" ).length < 1) {
+                            $("#qa_answers_list").append(loading_spinner());
+                        }
+                    },
+                    complete: function() {
+                        $("#loading_spinner").remove();
+                    },
+                    success: function(data) {
+                        let link_uri = "https://www.wikidata.org/wiki/" + String(data['idx']);
+        
+                        if (index == 0) {
+                            $("#top_answer_loading").hide();
+                            if (data['image'] != null) {
+                                let img = jQuery('<img>').addClass(
+                                    "object-cover w-full rounded-t-lg h-96 md:h-auto md:w-48 md:rounded-none md:rounded-l-lg"
+                                ).attr(
+                                    "src", decodeURI(data['image'][0])
+                                ).attr(
+                                    "alt", String(data['label'])
+                                )
+                                $("#top_answer_card").append(img);
+                            }
+                            let body = jQuery('<div>').addClass('flex flex-col p-4 leading-normal');
+                            body.append(
+                                jQuery('<a>').addClass('mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white hover:text-blue-600').attr(
+                                    "target", "_blank"
+                                ).attr(
+                                    "href", link_uri
+                                ).append(String(data['label']))
+                            )
+        
+                            body.append(
+                                jQuery('<p class="mb-3 py-2 font-normal text-gray-700 dark:text-gray-400">').append(
+                                    description_to_html(data['description'])
+                                )
+                            )
+                            body.append(
+                                jQuery('<p>').append(
+                                    instance_of_to_html(data['instance_of'])
+                                )
+                            )
+        
+                            $("#top_answer_card").append(body);
+                        }
+        
+                        let link = jQuery('<a>').addClass(
+                            "p-1 hover:text-blue-700 mb-5 md:max-w-xl w-[36rem] hover:bg-gray-50"
+                        ).attr(
+                            "target", "_blank"
+                        ).attr(
+                            "href", link_uri
+                        );
+                        link.append(
+                            '<span class="italic inline-block py-0.5 text-xs">' + link_uri + '</span><br>' +
+                            '<p class="text-2xl text-blue-600">' + String(data['label']) + '</p>' +
+                            '<p class="text-sm">' + description_to_html(data['description']) + '<br>' + instance_of_to_html(data['instance_of']) + '</p>'
+                        );
+        
+                        let answer_block = jQuery('<div class="grid grid-flow-col auto-cols-auto answer_item">').append(
+                            '<span class="text-slate-300 text-2xl w-[2rem]">' + String(index + 1) + '</span>'
+                        ).attr(
+                            'answer-order', String(index + 1)
+                        )
+                        answer_block.append(link);
+        
+                        $("#qa_answers_list").append(answer_block);
+                        
+                        let answers = getSorted('.answer_item', 'answer-order');
+                        answers.detach().appendTo($("#qa_answers_list"))
+                    }
+                })
+            });
+        }
+
+        function pipeline_switcher(pipeline_name) {
+            if (pipeline_name == 'seq2seq') {
+                return 'seq2seq'
+            } else if (pipeline_name == 'act_selection') {
+                return 'act_selection/main'
+            } else if (pipeline_name == 'act_selection_simple') {
+                return 'act_selection/simple_type_selection'
+            } else if (pipeline_name == 'm3m') {
+                return 'm3m'
+            } else {
+                return pipeline_name
+            }
+        }
+
+        $(document).ready(function() {
+            $.ajax({
+                url: '/pipeline/' + pipeline_switcher('{{pipeline}}'),
+                method: 'POST',
+                data: JSON.stringify({text: '{{question}}'}),
+                contentType: "application/json; charset=utf-8",
+                dataType: 'json',
+                cache: true,
+                success: function (data) {
+                    process_pipeline_data(data);
+                },
+            })
+        })
+    </script>
 </div>
 
 
