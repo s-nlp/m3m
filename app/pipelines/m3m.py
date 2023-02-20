@@ -24,7 +24,7 @@ def m3m_pipeline(question: QuestionRequest) -> M3MPipelineResponce:
     predicts_filtered, scores_filtered, ue = m3m(question.text)
 
     return M3MPipelineResponce(
-        answers=predicts_filtered,
-        scores=scores_filtered,
+        answers=predicts_filtered[:60],
+        scores=scores_filtered[:60],
         uncertenity=ue,
     )

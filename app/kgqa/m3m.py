@@ -14,7 +14,7 @@ from nltk.tokenize import RegexpTokenizer
 from transformers import BertModel, BertTokenizer
 from wikidata.client import Client as WDClient
 
-from .utils import get_wd_search_results
+from .utils.utils import get_wd_search_results
 
 
 class EncoderBERT(nn.Module):

@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 COPY ./app /code/app
 COPY ./data /data/
 
+RUN apt-get update && apt-get install -y graphviz
 RUN python3 -c "import nltk; nltk.download('stopwords')"
 RUN python3 -m spacy download ru_core_news_sm
 

@@ -29,7 +29,7 @@
 
     <div class="flex-auto w-auto bg-slate-100">
         <!-- DETAILS -->
-        <div class="m-2" id="details">
+        <div class="m-2 bg-white rounded border-black shadow-md p-5 w-min min-w-fit" id="details">
 
         </div>
         <!-- END DETAILS -->
@@ -52,9 +52,11 @@
 
         function instance_of_to_html(instance_of) {
             if (instance_of != null) {
-                result = "";
+                result = $(document.createElement('div'));
+                result.addClass('overflow-x-auto p-2 rounded border-slate-100 max-h-16');
+
                 instance_of.forEach(function (val, idx, all) {
-                    result += one_instace_of_to_html(val[0], val[1]);
+                    result.append(one_instace_of_to_html(val[0], val[1]));
                 })
                 return result;
             } else {
@@ -80,17 +82,20 @@
             }));
         }
         
-        function process_pipeline_data(data) {
+        function process_pipeline_data(pipeline_data) {
             const queryString = window.location.search;
             const urlParams = new URLSearchParams(queryString);
             const pipeline = urlParams.get('pipeline');
 
+            graph_svg = $(document.createElement('div'));
+            $("#details").append(graph_svg);
+
             if (pipeline == 'act_selection' || pipeline == 'act_selection_simple') {
-                console.log(data);
+                console.log(pipeline_data);
                 
                 question_entities = $(document.createElement('div'));
                 question_entities.append('Question entities: ');
-                data['question_entities'].forEach(obj => {
+                pipeline_data['question_entities'].forEach(obj => {
                     let entity_idx = obj['entity'];
                     $.ajax({
                         url: 'wikidata/entities/' + entity_idx + '/label',
@@ -115,7 +120,7 @@
                 $("#details").append(answer_instance_of);
                 $("#details").append(answer_instance_of_count);
 
-                Object.entries(data['answer_instance_of_count']).forEach(function(entry, idx, _) {
+                Object.entries(pipeline_data['answer_instance_of_count']).forEach(function(entry, idx, _) {
                     const [entity_idx, count] = entry;
                     $.ajax({
                         url: 'wikidata/entities/' + entity_idx + '/label',
@@ -131,7 +136,7 @@
                             tr.attr('order', 10000000 - count);
                             answer_instance_of_count_body.append(tr);
                             
-                            if (data['answer_instance_of'].includes(entity_idx)) {
+                            if (pipeline_data['answer_instance_of'].includes(entity_idx)) {
                                 answer_instance_of.append(one_instace_of_to_html(entity_idx, edata['label'])); 
                             }
                         },
@@ -144,7 +149,7 @@
             }
 
             answers = [];
-            data["answers"].forEach(function(idx, index, _) {
+            pipeline_data["answers"].forEach(function(idx, index, _) {
                 $.ajax({
                     url: '/wikidata/entities/' + idx,
                     method: 'GET',
@@ -160,7 +165,7 @@
                     },
                     success: function(data) {
                         let link_uri = "https://www.wikidata.org/wiki/" + String(data['idx']);
-        
+
                         if (index == 0) {
                             $("#top_answer_loading").hide();
                             if (data['image'] != null) {
@@ -194,6 +199,30 @@
                             )
         
                             $("#top_answer_card").append(body);
+                            
+                            if (pipeline == 'act_selection' || pipeline == 'act_selection_simple') {
+                                let question_entities_idx = [];
+                                pipeline_data['question_entities'].forEach(obj => {
+                                    question_entities_idx.push(String(obj["entity"]));
+                                })
+                                $.ajax({
+                                    url: '/wikidata/entities/ssp/graph/svg',
+                                    method: 'POST',
+                                    data: JSON.stringify({question_entities_idx: question_entities_idx, answer_idx: String(data['idx'])}),
+                                    contentType: "application/json",
+                                    dataType: 'json',
+                                    cache: true,
+                                    success: function (svg_data) {
+                                        //img = $(document.createElement('img'));
+                                        //img.attr(
+                                        //    'src',
+                                        //    'data:image/svg+xml;utf8,'+svg_data
+                                        //);
+
+                                        graph_svg.append(String(svg_data));
+                                    },
+                                });
+                            }
                         }
         
                         let link = jQuery('<a>').addClass(
@@ -205,9 +234,13 @@
                         );
                         link.append(
                             '<span class="italic inline-block py-0.5 text-xs">' + link_uri + '</span><br>' +
-                            '<p class="text-2xl text-blue-600">' + String(data['label']) + '</p>' +
-                            '<p class="text-sm">' + description_to_html(data['description']) + '<br>' + instance_of_to_html(data['instance_of']) + '</p>'
+                            '<p class="text-2xl text-blue-600">' + String(data['label']) + '</p>'
                         );
+                        description = $(document.createElement('p'));
+                        description.addClass('text-sm');
+                        description.append(description_to_html(data['description']) + '<br>');
+                        description.append(instance_of_to_html(data['instance_of']));
+                        link.append(description);
         
                         let answer_block = jQuery('<div class="grid grid-flow-col auto-cols-auto answer_item">').append(
                             '<span class="text-slate-300 text-2xl w-[2rem]">' + String(index + 1) + '</span>'

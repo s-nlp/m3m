@@ -41,3 +41,8 @@ class M3MPipelineResponce(PipelineResponce):
     scores: list[float]
     uncertenity: float
 
+
+class WikidataSSPRequest(BaseModel):
+    question_entities_idx: list[str]
+    answer_idx: str
+
