@@ -8,7 +8,7 @@ from app.kgqa.act_selection import QuestionToRankInstanceOf, QuestionToRankInsta
 from app.kgqa.entity_linking import EntitiesSelection
 from app.kgqa.mgenre import build_mgenre_pipeline
 from app.kgqa.ner import NerToSentenceInsertion
-from app.kgqa.utils import label_to_entity_idx
+from app.kgqa.utils.utils import label_to_entity_idx
 from app.models.base import Entity as EntityResponce
 from app.models.base import Question as QuestionRequest
 from app.models.base import ACTPipelineResponce, QuestionEntitiesResponce, EntityNeighboursResponce
@@ -114,7 +114,7 @@ def pipeline(question: QuestionRequest) -> ACTPipelineResponce:
         answers_candidates=answers_candidates,
         only_forward_one_hop=True,
     )
-    answers_with_scores = question_to_rank.final_answers()[:100]
+    answers_with_scores = question_to_rank.final_answers()[:60]
 
     return ACTPipelineResponce(
         answers=[a[1].idx for a in answers_with_scores],

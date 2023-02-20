@@ -9,6 +9,8 @@ from pywikidata import Entity
 from app.kgqa.m3m import M3MQA, EncoderBERT
 from app.pipelines import act_selection, seq2seq, m3m
 from app.models.base import Entity as EntityResponce
+from app.models.base import WikidataSSPRequest
+from app.kgqa.utils.graph_viz import SubgraphsRetriever, plot_graph_svg
 
 app = FastAPI()
 
@@ -59,3 +61,12 @@ async def entity_label(idx: str) -> EntityResponce:
         idx=entity.idx,
         label=entity.label,
     )
+
+
+@app.post("/wikidata/entities/ssp/graph/svg")
+async def ssp_subgraph_svg(request: WikidataSSPRequest) -> str:
+    sr = SubgraphsRetriever()
+    graph, _ = sr.get_subgraph(request.question_entities_idx, request.answer_idx)
+    graph_svg = plot_graph_svg(graph)
+    return graph_svg.pipe(format='svg').replace(b'\n', b'')
+
