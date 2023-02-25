@@ -2,7 +2,9 @@
 
 This repository contains source code of the Web demo for answering one-hop questions over knowledge graph. 
 
-Link to the online demo: [https://kgqa-nlp-zh.skoltech.ru](https://kgqa-nlp-zh.skoltech.ru)
+- Link to the online demo: [https://kgqa-nlp-zh.skoltech.ru](https://kgqa-nlp-zh.skoltech.ru)
+
+- Link to the video presentation of the demo: [https://www.youtube.com/watch?v=r5eM6kTYPcQ](https://www.youtube.com/watch?v=r5eM6kTYPcQ)
 
 <img width="700" alt="paris" src="https://user-images.githubusercontent.com/1456830/221340570-bdb95079-d68c-44ba-ad0a-e6613a812963.png">
 
