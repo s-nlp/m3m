@@ -5,8 +5,6 @@ import numpy as np
 import spacy
 import torch
 import torch.nn as nn
-import time
-from joblib import Memory, Parallel, delayed
 from natasha import (Doc, MorphVocab, NamesExtractor, NewsEmbedding,
                      NewsMorphTagger, NewsNERTagger, NewsSyntaxParser,
                      Segmenter)
@@ -15,19 +13,14 @@ from nltk.corpus import stopwords
 from nltk.tokenize import RegexpTokenizer
 from transformers import BertModel, BertTokenizer
 from wikidata.client import Client as WDClient
-from wikidata.cache import MemoryCachePolicy as WDCachePolicy
-
-from app.config import DEFAULT_CACHE_PATH
 
 from .utils.utils import get_wd_search_results
 
-memory = Memory(DEFAULT_CACHE_PATH, verbose=0)
-
 
 class EncoderBERT(nn.Module):
-    def __init__(self, encoder_ckpt_path):
+    def __init__(self):
         super(EncoderBERT,self).__init__()
-        self.encoder =  BertModel.from_pretrained(encoder_ckpt_path)
+        self.encoder =  BertModel.from_pretrained("bert-base-multilingual-cased")
 
     def forward(self, questions):
         q_ids = torch.tensor(questions)
@@ -159,7 +152,7 @@ class NounsExtractor():
 class M3MQA():
     def __init__(
         self,
-        encoder_ckpt_path: str = "encoder_ckpt_path",
+        encoder_ckpt_path: str = "ckpts/encoder",
         projection_e_ckpt_path: str = "ckpts/projection_E",
         projection_q_ckpt_path: str = "ckpts/projection_Q",
         projection_p_ckpt_path: str = "ckpts/projection_P",
@@ -176,7 +169,9 @@ class M3MQA():
         self.nouns_extractor = NounsExtractor()
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
 
-        self.encoder = EncoderBERT(encoder_ckpt_path)
+        # self.encoder = torch.load(encoder_ckpt_path, map_location=torch.device(device)).to(device)
+        self.encoder = EncoderBERT()
+        self.encoder.load_state_dict(torch.load(encoder_ckpt_path, map_location=torch.device(device)))
         self.encoder.to(device)
         self.projection_E = torch.load(projection_e_ckpt_path, map_location=torch.device(device)).to(device)
         self.projection_Q = torch.load(projection_q_ckpt_path, map_location=torch.device(device)).to(device)
@@ -193,13 +188,17 @@ class M3MQA():
         for noun in nouns:
             ids_q += get_wd_search_results(noun, self.max_presearch)
         ids_q = list(set(ids_q))
-        
-
-        second_hop_ids_QP_results = Parallel(n_jobs=-2, backend='loky')(
-            delayed(M3MQA.mp_get_second_hop_entities_by_idd)(idd_q)
-            for idd_q in ids_q
-        )
-        second_hop_ids_QP = {idd_q:second_hop_ids for idd_q, second_hop_ids in zip(ids_q, second_hop_ids_QP_results)}
+        # second_hop_ids_QP = Manager().dict()
+        # processes = []
+        # for idd_q in ids_q:
+        #     processes.append(Process(target=self.mp_get_second_hop_entities_by_idd, args=(idd_q, second_hop_ids_QP)))
+        # for p in processes:
+        #     p.start()
+        # for p in processes:
+        #     p.join()
+        second_hop_ids_QP = dict()
+        for idd_q in ids_q:
+            second_hop_ids_QP[idd_q] = self.mp_get_second_hop_entities_by_idd(idd_q)
 
 
         first_hop_graph_E = []
@@ -208,11 +207,9 @@ class M3MQA():
         second_hop_graph_P = []
         second_hop_ids_filtered_P = []
         ids_filtered_E = []
-        ids_filtered_E = []
         for key in second_hop_ids_QP.keys():
             for (idd_q, idd_p) in second_hop_ids_QP[key]:
                 if idd_q in self.graph_embeddings_Q and idd_p in self.graph_embeddings_P and key in self.graph_embeddings_Q:
-                    ids_filtered_E.append(key)
                     ids_filtered_E.append(key)
                     first_hop_graph_E.append(self.graph_embeddings_Q[key])
                     second_hop_ids_filtered_Q.append(idd_q)
@@ -229,11 +226,8 @@ class M3MQA():
             second_hop_ids_filtered_Q,
             second_hop_ids_filtered_P,
             ids_filtered_E,
-            second_hop_ids_filtered_P,
-            ids_filtered_E,
             min(50,len(second_hop_graph_Q)),
         )
-        
         
         UE = scores[0] - scores[1]
         return triples, predicts, scores.detach().cpu().numpy(), UE.item()
@@ -252,6 +246,7 @@ class M3MQA():
                     if 'entity-type' in value.keys():
                         o = value["id"]
                         triples.append((o,r))
+        # d[idd] = triples
         return triples
 
     def get_top_ids_second_hop(
