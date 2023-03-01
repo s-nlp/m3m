@@ -21,10 +21,11 @@ m3m = M3MQA(**m3m_config)
 @lru_cache(maxsize=1024)
 @router.post("/")
 def m3m_pipeline(question: QuestionRequest) -> M3MPipelineResponce:
-    predicts_filtered, scores_filtered, ue = m3m(question.text)
+    triples, predicts_filtered, scores_filtered, ue = m3m(question.text)
 
     return M3MPipelineResponce(
-        answers=predicts_filtered[:60],
-        scores=scores_filtered[:60],
-        uncertenity=ue,
+        answers=predicts_filtered[:60].tolist(),
+        scores=scores_filtered[:60].tolist(),
+        uncertenity=float(ue),
+        triples=triples[:60].tolist(),
     )
