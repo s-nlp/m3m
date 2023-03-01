@@ -5,6 +5,7 @@ import numpy as np
 import spacy
 import torch
 import torch.nn as nn
+from joblib import Memory
 from natasha import (Doc, MorphVocab, NamesExtractor, NewsEmbedding,
                      NewsMorphTagger, NewsNERTagger, NewsSyntaxParser,
                      Segmenter)
@@ -14,7 +15,11 @@ from nltk.tokenize import RegexpTokenizer
 from transformers import BertModel, BertTokenizer
 from wikidata.client import Client as WDClient
 
+from app.config import DEFAULT_CACHE_PATH
+
 from .utils.utils import get_wd_search_results
+
+memory = Memory(DEFAULT_CACHE_PATH, verbose=0)
 
 
 class EncoderBERT(nn.Module):
@@ -188,6 +193,7 @@ class M3MQA():
         for noun in nouns:
             ids_q += get_wd_search_results(noun, self.max_presearch)
         ids_q = list(set(ids_q))
+
         # second_hop_ids_QP = Manager().dict()
         # processes = []
         # for idd_q in ids_q:
@@ -196,9 +202,10 @@ class M3MQA():
         #     p.start()
         # for p in processes:
         #     p.join()
+        
         second_hop_ids_QP = dict()
         for idd_q in ids_q:
-            second_hop_ids_QP[idd_q] = self.mp_get_second_hop_entities_by_idd(idd_q)
+            second_hop_ids_QP[idd_q] = M3MQA.mp_get_second_hop_entities_by_idd(idd_q)
 
 
         first_hop_graph_E = []
@@ -206,36 +213,34 @@ class M3MQA():
         second_hop_ids_filtered_Q = []
         second_hop_graph_P = []
         second_hop_ids_filtered_P = []
+        ids_filtered_E = []
         for key in second_hop_ids_QP.keys():
             for (idd_q, idd_p) in second_hop_ids_QP[key]:
                 if idd_q in self.graph_embeddings_Q and idd_p in self.graph_embeddings_P and key in self.graph_embeddings_Q:
+                    ids_filtered_E.append(key)
                     first_hop_graph_E.append(self.graph_embeddings_Q[key])
                     second_hop_ids_filtered_Q.append(idd_q)
                     second_hop_graph_Q.append(self.graph_embeddings_Q[idd_q])
                     second_hop_ids_filtered_P.append(idd_p)
                     second_hop_graph_P.append(self.graph_embeddings_P[idd_p])
 
-
-        predicts, scores = self.get_top_ids_second_hop(
+        triples, predicts, scores = self.get_top_ids_second_hop(
             question,
             first_hop_graph_E,
             second_hop_graph_Q,
             second_hop_graph_P,
             second_hop_ids_filtered_Q,
+            second_hop_ids_filtered_P,
+            ids_filtered_E,
             min(50,len(second_hop_graph_Q)),
         )
-
-        predicts_filtered = []
-        scores_filtered = []
-        for predict,score in zip(predicts,scores):
-            if not predict in predicts_filtered:
-                predicts_filtered.append(predict)
-                scores_filtered.append(score.item())
         
         UE = scores[0] - scores[1]
-        return predicts_filtered, scores_filtered, UE.cpu().detach().item()
-
-    def mp_get_second_hop_entities_by_idd(self, idd):
+        return triples, predicts, scores.detach().cpu().numpy(), UE.item()
+    
+    @staticmethod
+    @memory.cache
+    def mp_get_second_hop_entities_by_idd(idd):
         client = WDClient() 
         entity = client.get(idd, load = True)
         rs = entity.attributes["claims"].keys()
@@ -259,6 +264,8 @@ class M3MQA():
         second_hop_graph_Q,
         second_hop_graph_P,
         second_hop_ids_filtered_Q,
+        second_hop_ids_filtered_P,
+        ids_filtered_E,
         topk,
     ):
         self.projection_E.eval()
@@ -286,8 +293,15 @@ class M3MQA():
             cosines_descr_P = nn.Softmax()(cosines_descr_P)
 
             cosines_aggr = cosines_descr_P + cosines_descr_Q + cosines_descr_E
-            inds = torch.topk(cosines_aggr,topk,sorted=True).indices.cpu().numpy()
-        return np.array(second_hop_ids_filtered_Q)[inds], cosines_aggr[inds]
+            inds = torch.topk(cosines_aggr, topk, sorted=True).indices.cpu().numpy()
+            
+            P = np.array(second_hop_ids_filtered_P)[inds]
+            E = np.array(ids_filtered_E)[inds]
+            Q = np.array(second_hop_ids_filtered_Q)[inds]
+            final_triples = []
+            for p, e, q in zip(P,E,Q):
+                final_triples.append((e,p,q))
+        return np.array(final_triples), Q, cosines_aggr[inds]
         
 
     def _init_graph_embeddings(self, embeddings_path: str):

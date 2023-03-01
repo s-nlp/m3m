@@ -23,9 +23,11 @@ class EntityNeighboursResponce(BaseModel):
     entity: str
     property: str
 
+
 class QuestionEntitiesResponce(BaseModel):
     entity: str
     neighbours: list[EntityNeighboursResponce]
+
 
 class ACTPipelineResponce(PipelineResponce):
     instance_of_score: list[float]
@@ -37,9 +39,11 @@ class ACTPipelineResponce(PipelineResponce):
     answer_instance_of_count: dict[str, int]
     question_entities: list[QuestionEntitiesResponce]
 
+
 class M3MPipelineResponce(PipelineResponce):
     scores: list[float]
     uncertenity: float
+    triples: list[list[str]]
 
 
 class WikidataSSPRequest(BaseModel):

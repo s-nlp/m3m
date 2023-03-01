@@ -1,8 +1,15 @@
 from typing import Optional
-from pywikidata import Entity
+
 import requests
+from joblib import Memory
+from pywikidata import Entity
+
+from app.config import DEFAULT_CACHE_PATH
+
+memory = Memory(DEFAULT_CACHE_PATH, verbose=0)
 
 
+@memory.cache
 def label_to_entity_idx(label: str) -> Optional[str]:
     try:
         entities = [e.idx for e in Entity.from_label(label)]
@@ -28,6 +35,7 @@ def label_to_entity_idx(label: str) -> Optional[str]:
     return idx
 
 
+@memory.cache
 def get_wd_search_results(
     search_string: str,
     max_results: int = 500,
