@@ -23,9 +23,9 @@ memory = Memory(DEFAULT_CACHE_PATH, verbose=0)
 
 
 class EncoderBERT(nn.Module):
-    def __init__(self):
+    def __init__(self, encoder_ckpt_path):
         super(EncoderBERT,self).__init__()
-        self.encoder =  BertModel.from_pretrained("bert-base-multilingual-cased")
+        self.encoder =  BertModel.from_pretrained(encoder_ckpt_path)
 
     def forward(self, questions):
         q_ids = torch.tensor(questions)
@@ -157,7 +157,7 @@ class NounsExtractor():
 class M3MQA():
     def __init__(
         self,
-        encoder_ckpt_path: str = "ckpts/encoder",
+        encoder_ckpt_path: str = "encoder_ckpt_path",
         projection_e_ckpt_path: str = "ckpts/projection_E",
         projection_q_ckpt_path: str = "ckpts/projection_Q",
         projection_p_ckpt_path: str = "ckpts/projection_P",
@@ -174,9 +174,7 @@ class M3MQA():
         self.nouns_extractor = NounsExtractor()
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
 
-        # self.encoder = torch.load(encoder_ckpt_path, map_location=torch.device(device)).to(device)
-        self.encoder = EncoderBERT()
-        self.encoder.load_state_dict(torch.load(encoder_ckpt_path, map_location=torch.device(device)))
+        self.encoder = EncoderBERT(encoder_ckpt_path)
         self.encoder.to(device)
         self.projection_E = torch.load(projection_e_ckpt_path, map_location=torch.device(device)).to(device)
         self.projection_Q = torch.load(projection_q_ckpt_path, map_location=torch.device(device)).to(device)
