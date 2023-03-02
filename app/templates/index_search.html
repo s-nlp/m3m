@@ -200,11 +200,15 @@
         
                             $("#top_answer_card").append(body);
                             
-                            if (pipeline == 'act_selection' || pipeline == 'act_selection_simple') {
+                            if (pipeline == 'act_selection' || pipeline == 'act_selection_simple' || pipeline == 'm3m') {
                                 let question_entities_idx = [];
-                                pipeline_data['question_entities'].forEach(obj => {
-                                    question_entities_idx.push(String(obj["entity"]));
-                                })
+                                if (pipeline == 'act_selection' || pipeline == 'act_selection_simple') {
+                                    pipeline_data['question_entities'].forEach(obj => {
+                                        question_entities_idx.push(String(obj["entity"]));
+                                    })
+                                } else {
+                                    question_entities_idx.push(pipeline_data['triples'][0][0]);
+                                }
                                 $.ajax({
                                     url: '/wikidata/entities/ssp/graph/svg',
                                     method: 'POST',
@@ -213,12 +217,6 @@
                                     dataType: 'json',
                                     cache: true,
                                     success: function (svg_data) {
-                                        //img = $(document.createElement('img'));
-                                        //img.attr(
-                                        //    'src',
-                                        //    'data:image/svg+xml;utf8,'+svg_data
-                                        //);
-
                                         graph_svg.append(String(svg_data));
                                     },
                                 });
