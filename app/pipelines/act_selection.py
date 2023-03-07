@@ -8,7 +8,7 @@ from app.kgqa.act_selection import QuestionToRankInstanceOf, QuestionToRankInsta
 from app.kgqa.entity_linking import EntitiesSelection
 from app.kgqa.mgenre import build_mgenre_pipeline
 from app.kgqa.ner import NerToSentenceInsertion
-from app.kgqa.utils.utils import label_to_entity_idx
+from app.kgqa.utils.utils import label_to_entity_idx, get_wd_search_results
 from app.models.base import Entity as EntityResponce
 from app.models.base import Question as QuestionRequest
 from app.models.base import ACTPipelineResponce, QuestionEntitiesResponce, EntityNeighboursResponce
@@ -58,14 +58,16 @@ def _prepare_question_entities_and_answer_candidate_helper(question: QuestionReq
     question_entities = entity_selection(
         all_question_entities, mgenre_predicted_entities
     )
-    question_entities = [label_to_entity_idx(label) for label in question_entities]
+
+    question_entities = [get_wd_search_results(label, 1)[0] for label in question_entities]
     question_entities = [idx for idx in question_entities if idx is not None]
 
     seq2seq_results = seq2seq(question.text)
     answers_candidates = Parallel(n_jobs=-2)(
-        delayed(label_to_entity_idx)(label) for label in seq2seq_results
+        delayed(get_wd_search_results)(label, 1) for label in seq2seq_results
     )
-    answers_candidates = [e for e in answers_candidates if e is not None]
+    answers_candidates = [e[0] for e in answers_candidates if e is not None and len(e) > 0]
+
     return question_entities, answers_candidates
 
 

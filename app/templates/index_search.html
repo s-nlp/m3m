@@ -11,7 +11,7 @@
 <div class="flex min-h-screen">
     <div class="flex-none pl-1 sm:pl-[6.65rem] md:mr-16">
         <div class="mt-7 py-3">
-            <div href="#" id="top_answer_card" class="mb-7 flex flex-col bg-white border border-gray-200 rounded-lg shadow md:flex-row md:max-w-xl dark:border-gray-700 dark:bg-gray-800 sm:ml-[2rem] md:w-[50rem]">
+            <div href="#" id="top_answer_card" class="mb-7 flex flex-col bg-white border border-gray-200 rounded-lg shadow md:flex-row md:max-w-xl sm:ml-[2rem] md:w-[50rem]">
                 
                 <svg class="animate-spin h-5 w-5 mr-3 w-full my-5" id="top_answer_loading" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -47,7 +47,7 @@
         
         function one_instace_of_to_html(identifier, label) {
             let link_uri = "https://www.wikidata.org/wiki/" + String(identifier);
-            return '<a href="' + link_uri + '" target="_blank" style="display:inline-block" class="hover:underline hover:bg-purple-200 my-1 bg-purple-100 text-purple-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-purple-900 dark:text-purple-300">' + String(identifier) + ' (' + String(label) + ')' + '</a>';
+            return '<a href="' + link_uri + '" target="_blank" style="display:inline-block" class="hover:underline hover:bg-purple-200 my-1 bg-purple-100 text-purple-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded">' + String(identifier) + ' (' + String(label) + ')' + '</a>';
         }
 
         function instance_of_to_html(instance_of) {
@@ -180,7 +180,7 @@
                             }
                             let body = jQuery('<div>').addClass('flex flex-col p-4 leading-normal');
                             body.append(
-                                jQuery('<a>').addClass('mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white hover:text-blue-600').attr(
+                                jQuery('<a>').addClass('mb-2 text-2xl font-bold tracking-tight text-gray-900 hover:text-blue-600').attr(
                                     "target", "_blank"
                                 ).attr(
                                     "href", link_uri
@@ -188,7 +188,7 @@
                             )
         
                             body.append(
-                                jQuery('<p class="mb-3 py-2 font-normal text-gray-700 dark:text-gray-400">').append(
+                                jQuery('<p class="mb-3 py-2 font-normal text-gray-700">').append(
                                     description_to_html(data['description'])
                                 )
                             )
