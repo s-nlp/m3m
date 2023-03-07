@@ -40,6 +40,10 @@ class ACTPipelineResponce(PipelineResponce):
     question_entities: list[QuestionEntitiesResponce]
 
 
+class ACTPipelineResponceWithDescriptionScore(ACTPipelineResponce):
+    entity_description_similarity_score: list[float]
+
+
 class M3MPipelineResponce(PipelineResponce):
     scores: list[float]
     uncertenity: float

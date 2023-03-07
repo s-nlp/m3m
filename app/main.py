@@ -1,16 +1,17 @@
-from pydantic import Field
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
-from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-
+from fastapi.templating import Jinja2Templates
+from pydantic import Field
 from pywikidata import Entity
 
 from app.kgqa.m3m import M3MQA, EncoderBERT
-from app.pipelines import act_selection, seq2seq, m3m
+from app.kgqa.utils.graph_viz import SubgraphsRetriever, plot_graph_svg
 from app.models.base import Entity as EntityResponce
 from app.models.base import WikidataSSPRequest
-from app.kgqa.utils.graph_viz import SubgraphsRetriever, plot_graph_svg
+from app.pipelines import seq2seq
+from app.pipelines import act_selection
+# from app.pipelines import m3m
 
 app = FastAPI()
 
@@ -19,7 +20,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.include_router(act_selection.router)
 app.include_router(seq2seq.router)
-app.include_router(m3m.router)
+# app.include_router(m3m.router)
 
 
 @app.get("/", response_class=HTMLResponse)

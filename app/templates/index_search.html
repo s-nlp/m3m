@@ -90,7 +90,7 @@
             graph_svg = $(document.createElement('div'));
             $("#details").append(graph_svg);
 
-            if (pipeline == 'act_selection' || pipeline == 'act_selection_simple') {
+            if (pipeline == 'act_selection' || pipeline == 'act_selection_simple' || pipeline == 'act_selection_simple_description') {
                 console.log(pipeline_data);
                 
                 question_entities = $(document.createElement('div'));
@@ -200,9 +200,9 @@
         
                             $("#top_answer_card").append(body);
                             
-                            if (pipeline == 'act_selection' || pipeline == 'act_selection_simple' || pipeline == 'm3m') {
+                            if (pipeline == 'act_selection' || pipeline == 'act_selection_simple' || pipeline == 'act_selection_simple_description' || pipeline == 'm3m') {
                                 let question_entities_idx = [];
-                                if (pipeline == 'act_selection' || pipeline == 'act_selection_simple') {
+                                if (pipeline == 'act_selection' || pipeline == 'act_selection_simple' || pipeline == 'act_selection_simple_description') {
                                     pipeline_data['question_entities'].forEach(obj => {
                                         question_entities_idx.push(String(obj["entity"]));
                                     })
@@ -263,6 +263,8 @@
                 return 'act_selection/main'
             } else if (pipeline_name == 'act_selection_simple') {
                 return 'act_selection/simple_type_selection'
+            } else if (pipeline_name == 'act_selection_simple_description') {
+                return 'act_selection/simple_with_description_qustion_similarity_type_selection'
             } else if (pipeline_name == 'm3m') {
                 return 'm3m'
             } else {

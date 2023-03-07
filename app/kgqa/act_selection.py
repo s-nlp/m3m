@@ -301,3 +301,111 @@ class QuestionToRankInstanceOfSimple(QuestionToRankInstanceOf):
             self._answer_instance_of = self._select_answer_instance_of(
                 self._answer_instance_of_count
             )
+
+
+class QuestionToRankInstanceOfSimpleWithDescriptionMatching(QuestionToRankInstanceOfSimple):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @staticmethod
+    @lru_cache(maxsize=DEFAULT_LRU_CACHE_MAXSIZE)
+    @memory.cache
+    def _calculate_entity_description_similarity_score(entity: Entity, question: str):
+        if entity.description is None or len(entity.description) == 0:
+            return 0
+        
+        description = " ".join(entity.description)
+        sentence_embeddings = QuestionToRankInstanceOf.sent_transformer.encode(
+            [question, description]
+        )
+        score = cosine_similarity([sentence_embeddings[0]], [sentence_embeddings[1]])[
+            0
+        ][0]
+        return score
+
+    def final_answers(self) -> List[Entity]:
+        if self._final_answers is None:
+            selected_set = []
+            for q_entity in self.question_entities:
+                if self.only_forward_one_hop:
+                    neighbours = q_entity.forward_one_hop_neighbours
+                else:
+                    neighbours = (
+                        q_entity.forward_one_hop_neighbours
+                        + q_entity.backward_one_hop_neighbours
+                    )
+
+                for property, entity in neighbours:
+                    property_question_intersection_score = QuestionToRankInstanceOf._calculate_property_question_intersection_score(
+                        property,
+                        self.question,
+                    )
+
+                    instance_of_score = len(
+                        set(entity.instance_of).intersection(list(self.answer_instance_of))
+                    )
+                    if instance_of_score > 0:
+                        instance_of_score = (
+                            len(self.answer_instance_of) - instance_of_score
+                        ) / len(self.answer_instance_of)
+                    # ---
+                    if (property, entity) in q_entity.forward_one_hop_neighbours:
+                        forward_one_hop_neighbours_score = 1
+                    else:
+                        forward_one_hop_neighbours_score = 0
+
+                    # ---
+                    if entity in self.answers_candidates:
+                        count = len(self.answers_candidates)
+                        answers_candidates_score = (
+                            count - self.answers_candidates.index(entity)
+                        ) / count
+                    else:
+                        answers_candidates_score = 0
+
+                    # ---
+                    entity_description_similarity_score = QuestionToRankInstanceOfSimpleWithDescriptionMatching._calculate_entity_description_similarity_score(
+                        entity,
+                        self.question,
+                    )
+
+                    ###
+                    selected_set.append(
+                        (
+                            property,
+                            entity,
+                            instance_of_score * 3,
+                            forward_one_hop_neighbours_score * 3,
+                            answers_candidates_score,
+                            property_question_intersection_score,
+                            entity_description_similarity_score * 3,
+                        )
+                    )
+
+            for entity in self.answers_candidates:
+                count = len(self.answers_candidates)
+                answers_candidates_score = (
+                    count - self.answers_candidates.index(entity)
+                ) / count
+
+                instance_of_score = len(
+                    set(entity.instance_of).intersection(list(self.answer_instance_of))
+                )
+                if instance_of_score > 0:
+                    instance_of_score = (
+                        len(self.answer_instance_of) - instance_of_score
+                    ) / len(self.answer_instance_of)
+
+                entity_description_similarity_score = QuestionToRankInstanceOfSimpleWithDescriptionMatching._calculate_entity_description_similarity_score(
+                    entity,
+                    self.question,
+                )
+
+                selected_set.append(
+                    (None, entity, instance_of_score * 3, 0, answers_candidates_score, 0, entity_description_similarity_score * 3)
+                )
+
+            selected_set = sorted(selected_set, key=lambda x: -sum(x[2:]))
+            self._final_answers = selected_set
+
+        return list(self._final_answers)
