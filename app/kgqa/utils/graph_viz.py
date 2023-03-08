@@ -13,6 +13,7 @@ import graphviz
 import networkx as nx
 import requests
 from pywikidata import Entity
+from pywikidata.utils import request_to_wikidata
 
 DEFAULT_CACHE_PATH = '/tmp/cache'
 SPARQL_ENDPOINT = 'https://query.wikidata.org/sparql'
@@ -568,10 +569,25 @@ def plot_graph_svg(graph):
     for edge in graph.edges:
         n1 = f"{Entity(edge[0]).label}\n({edge[0]})"
         n2 = f"{Entity(edge[1]).label}\n({edge[1]})"
+        edge_label = "111"
+
+        query = """
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
+        PREFIX wd: <http://www.wikidata.org/entity/> 
+
+        SELECT ?prop WHERE
+        {
+        wd:Q142 ?prop wd:Q90 .
+        }
+        """.replace('<E1>', edge[0]).replace('<E2>', edge[1])
+
+        prop = request_to_wikidata(query)[0]['prop']['value'].split('/')[-1]
+        edge_label = Entity(prop).label
+
         viz_graph.edge(
             n1,
             n2,
-            # label=f'"{edge_label}"',
+            label=f'{edge_label}',
         )
 
     return viz_graph
