@@ -5,9 +5,7 @@ services:
     ports:
       - 8080:8080
     volumes:
-      - /home/salnikov/data_kbqa/seq2seq_runs/:/data/seq2seq/
       - /home/salnikov/qa_prod/app:/code/app
-      - /home/salnikov/cache:/root/.cache/
       - /home/salnikov/data/m3m:/data/m3m
     environment:
       - TOKENIZERS_PARALLELISM=false
@@ -18,21 +16,3 @@ services:
               - driver: nvidia
                 device_ids: ["1"]
                 capabilities: [gpu]
-
-  # serve:
-  #   image: "pytorch/torchserve:latest-gpu"
-  #   volumes:
-  #     - /home/salnikov/data_kbqa/model-store/:/home/model-server/model-store
-  #   ports:
-  #     - 8080:8080
-  #     - 8081:8081
-  #     - 8082:8082
-  #     - 7070:7070
-  #     - 7071:7071
-  #   deploy:
-  #     resources:
-  #         reservations:
-  #           devices:
-  #             - driver: nvidia
-  #               device_ids: ["5"]
-  #               capabilities: [gpu]
