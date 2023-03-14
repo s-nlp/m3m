@@ -195,7 +195,6 @@ class M3MQA():
         ids_q = list(set(ids_q))
         
 
-        start = time.time()
         second_hop_ids_QP_results = Parallel(n_jobs=-2, backend='loky')(
             delayed(M3MQA.mp_get_second_hop_entities_by_idd)(idd_q)
             for idd_q in ids_q
