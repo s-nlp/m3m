@@ -577,7 +577,7 @@ def plot_graph_svg(graph):
 
         SELECT ?prop WHERE
         {
-        wd:Q142 ?prop wd:Q90 .
+        wd:<E1> ?prop wd:<E2> .
         }
         """.replace('<E1>', edge[0]).replace('<E2>', edge[1])
 

@@ -5,7 +5,8 @@ import numpy as np
 import spacy
 import torch
 import torch.nn as nn
-from joblib import Memory
+import time
+from joblib import Memory, Parallel, delayed
 from natasha import (Doc, MorphVocab, NamesExtractor, NewsEmbedding,
                      NewsMorphTagger, NewsNERTagger, NewsSyntaxParser,
                      Segmenter)
@@ -14,6 +15,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import RegexpTokenizer
 from transformers import BertModel, BertTokenizer
 from wikidata.client import Client as WDClient
+from wikidata.cache import MemoryCachePolicy as WDCachePolicy
 
 from app.config import DEFAULT_CACHE_PATH
 
@@ -191,19 +193,14 @@ class M3MQA():
         for noun in nouns:
             ids_q += get_wd_search_results(noun, self.max_presearch)
         ids_q = list(set(ids_q))
-
-        # second_hop_ids_QP = Manager().dict()
-        # processes = []
-        # for idd_q in ids_q:
-        #     processes.append(Process(target=self.mp_get_second_hop_entities_by_idd, args=(idd_q, second_hop_ids_QP)))
-        # for p in processes:
-        #     p.start()
-        # for p in processes:
-        #     p.join()
         
-        second_hop_ids_QP = dict()
-        for idd_q in ids_q:
-            second_hop_ids_QP[idd_q] = M3MQA.mp_get_second_hop_entities_by_idd(idd_q)
+
+        start = time.time()
+        second_hop_ids_QP_results = Parallel(n_jobs=-2, backend='loky')(
+            delayed(M3MQA.mp_get_second_hop_entities_by_idd)(idd_q)
+            for idd_q in ids_q
+        )
+        second_hop_ids_QP = {idd_q:second_hop_ids for idd_q, second_hop_ids in zip(ids_q, second_hop_ids_QP_results)}
 
 
         first_hop_graph_E = []
@@ -237,9 +234,8 @@ class M3MQA():
         return triples, predicts, scores.detach().cpu().numpy(), UE.item()
     
     @staticmethod
-    @memory.cache
     def mp_get_second_hop_entities_by_idd(idd):
-        client = WDClient() 
+        client = WDClient(cache_policy=WDCachePolicy()) 
         entity = client.get(idd, load = True)
         rs = entity.attributes["claims"].keys()
         triples = []
@@ -252,7 +248,6 @@ class M3MQA():
                     if 'entity-type' in value.keys():
                         o = value["id"]
                         triples.append((o,r))
-        # d[idd] = triples
         return triples
 
     def get_top_ids_second_hop(
