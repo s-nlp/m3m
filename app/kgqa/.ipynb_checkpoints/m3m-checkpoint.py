@@ -156,10 +156,14 @@ class M3MQA():
         projection_e_ckpt_path: str = "ckpts/projection_E",
         projection_q_ckpt_path: str = "ckpts/projection_Q",
         projection_p_ckpt_path: str = "ckpts/projection_P",
-        embeddings_path_q: str = "../table-qa/new_data/entitie_embeddings_ru.json",
-        embeddings_path_p: str = "../table-qa/new_data/entitie_P_embeddings_ru.json",
-        max_presearch: int = 7,
-        max_len_q: int = 64,
+        embeddings_path_q: str = "../table-qa/new_data/entitie_embeddings_ru_tensor.pt",
+        embeddings_path_p: str = "../table-qa/new_data/entitie_P_embeddings_ru_tensor.pt",
+        id2ind_path: str = '../table-qa/new_data/id2ind.npy'
+        p2ind_path: str = '../table-qa/new_data/p2ind.npy'
+        wikidata_cach_path: str = '../table-qa/wikidata_correct_cache.npy'
+        
+        max_presearch: int = 7,#убрать?
+        max_len_q: int = 64, 
         device: str = 'cpu',
     ):
         self.max_presearch = max_presearch
@@ -177,8 +181,13 @@ class M3MQA():
         self.projection_Q = torch.load(projection_q_ckpt_path, map_location=torch.device(device)).to(device)
         self.projection_P = torch.load(projection_p_ckpt_path, map_location=torch.device(device)).to(device)
 
-        self.graph_embeddings_Q, self.embeddings_tensor_Q = self._init_graph_embeddings(embeddings_path_q)
-        self.graph_embeddings_P, self.embeddings_tensor_P = self._init_graph_embeddings(embeddings_path_p)
+        self.embeddings_tensor_Q = torch.load(embeddings_path_q)
+        self.embeddings_tensor_P = torch.load(embeddings_path_p)
+        
+        self.wikidata_cache = np.load(wikidata_cach_path, allow_pickle=True).all()
+        
+        self.id2ind = np.load(id2ind_path)
+        self.p2ind = np.load(p2ind_path)
 
     def __call__(self, question: str):
         nouns = self.nouns_extractor(question)
@@ -188,17 +197,14 @@ class M3MQA():
         for noun in nouns:
             ids_q += get_wd_search_results(noun, self.max_presearch)
         ids_q = list(set(ids_q))
-        # second_hop_ids_QP = Manager().dict()
-        # processes = []
-        # for idd_q in ids_q:
-        #     processes.append(Process(target=self.mp_get_second_hop_entities_by_idd, args=(idd_q, second_hop_ids_QP)))
-        # for p in processes:
-        #     p.start()
-        # for p in processes:
-        #     p.join()
+        
         second_hop_ids_QP = dict()
-        for idd_q in ids_q:
-            second_hop_ids_QP[idd_q] = self.mp_get_second_hop_entities_by_idd(idd_q)
+
+        for idd in ids_q:
+            if idd in self.wikidata_cache:
+                triplets = self.wikidata_cache[idd]
+                triplets = [(s, p) for p,s in zip(triplets[0:-1:2], triplets[1::2])]
+                second_hop_ids_QP[idd] = triplets
 
 
         first_hop_graph_E = []
@@ -209,13 +215,13 @@ class M3MQA():
         ids_filtered_E = []
         for key in second_hop_ids_QP.keys():
             for (idd_q, idd_p) in second_hop_ids_QP[key]:
-                if idd_q in self.graph_embeddings_Q and idd_p in self.graph_embeddings_P and key in self.graph_embeddings_Q:
+                if idd_q in id2ind and idd_p in p2ind and key in self.id2ind:
                     ids_filtered_E.append(key)
-                    first_hop_graph_E.append(self.graph_embeddings_Q[key])
+                    first_hop_graph_E.append(self.embeddings_tensor_Q[self.id2ind[key]].cpu().numpy())
                     second_hop_ids_filtered_Q.append(idd_q)
-                    second_hop_graph_Q.append(self.graph_embeddings_Q[idd_q])
+                    second_hop_graph_Q.append(self.embeddings_tensor_Q[self.id2ind[idd_q]].cpu().numpy())
                     second_hop_ids_filtered_P.append(idd_p)
-                    second_hop_graph_P.append(self.graph_embeddings_P[idd_p])
+                    second_hop_graph_P.append(self.embeddings_tensor_P[self.p2ind[idd_p]].cpu().numpy())
 
 
         predicts, scores, triples = self.get_top_ids_second_hop(
@@ -232,22 +238,6 @@ class M3MQA():
         UE = scores[0] - scores[1]
         return triples, predicts, scores.detach().cpu().numpy(), UE.item()
 
-    def mp_get_second_hop_entities_by_idd(self, idd):
-        client = WDClient() 
-        entity = client.get(idd, load = True)
-        rs = entity.attributes["claims"].keys()
-        triples = []
-        for r in rs:
-            items = entity.attributes["claims"][r]
-            for item in items:
-                item = item["mainsnak"]
-                if "datavalue" in item and "value" in item["datavalue"] and type(item["datavalue"]["value"]) == dict: # sometimes it is empty
-                    value = item["datavalue"]["value"]
-                    if 'entity-type' in value.keys():
-                        o = value["id"]
-                        triples.append((o,r))
-        # d[idd] = triples
-        return triples
 
     def get_top_ids_second_hop(
         self,
@@ -270,9 +260,9 @@ class M3MQA():
             y_pred_q = self.projection_Q(self.encoder(X[None,:].to(self.device)))
             y_pred_p = self.projection_P(self.encoder(X[None,:].to(self.device)))
 
-            embeddings_tensor_E = torch.tensor(first_hop_graph_E, dtype=torch.float)
-            embeddings_tensor_Q = torch.tensor(second_hop_graph_Q, dtype=torch.float)
-            embeddings_tensor_P = torch.tensor(second_hop_graph_P, dtype=torch.float)
+#             embeddings_tensor_E = torch.tensor(first_hop_graph_E, dtype=torch.float)
+#             embeddings_tensor_Q = torch.tensor(second_hop_graph_Q, dtype=torch.float)
+#             embeddings_tensor_P = torch.tensor(second_hop_graph_P, dtype=torch.float)
 
 
             cosines_descr_E = torch.cosine_similarity(embeddings_tensor_E.cpu(),y_pred_e.cpu())
@@ -296,15 +286,15 @@ class M3MQA():
         return np.array(final_triples), Q, cosines_aggr[inds]
         
 
-    def _init_graph_embeddings(self, embeddings_path: str):
-        with open(embeddings_path, 'r') as file_handler:
-            graph_embeddings = json.load(file_handler)
+#     def _init_graph_embeddings(self, embeddings_path: str):
+#         with open(embeddings_path, 'r') as file_handler:
+#             graph_embeddings = json.load(file_handler)
 
-        embeddings = graph_embeddings
-        ids_list = list(graph_embeddings.keys())
-        embeddings = [embeddings[idx] for idx in ids_list]
-        embeddings_tensor = torch.tensor(embeddings, dtype=torch.float)
-        return graph_embeddings, embeddings_tensor
+#         embeddings = graph_embeddings
+#         ids_list = list(graph_embeddings.keys())
+#         embeddings = [embeddings[idx] for idx in ids_list]
+#         embeddings_tensor = torch.tensor(embeddings, dtype=torch.float)
+#         return graph_embeddings, embeddings_tensor
     
     def _init_encoder(self):
         # self.encoder = EncoderBERT()
