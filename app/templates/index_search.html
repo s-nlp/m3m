@@ -87,12 +87,16 @@
             const urlParams = new URLSearchParams(queryString);
             const pipeline = urlParams.get('pipeline');
 
+            if (pipeline == 'm3m') {
+                $("#details").append(
+                    "Uncertainty: <b>"+String(pipeline_data['uncertenity'])+"</b>"
+                );
+            }
+
             graph_svg = $(document.createElement('div'));
             $("#details").append(graph_svg);
 
             if (pipeline == 'act_selection' || pipeline == 'act_selection_simple' || pipeline == 'act_selection_simple_description') {
-                console.log(pipeline_data);
-                
                 question_entities = $(document.createElement('div'));
                 question_entities.append('Question entities: ');
                 pipeline_data['question_entities'].forEach(obj => {
