@@ -12,8 +12,24 @@ from app.models.base import WikidataSSPRequest
 from app.pipelines import seq2seq
 from app.pipelines import act_selection
 from app.pipelines import m3m
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+origins = [
+    "http://kgqa-nlp-zh.skoltech.ru",
+    "https://kgqa-nlp-zh.skoltech.ru",
+    "http://localhost:8085",
+    "http://localhost",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
