@@ -5,8 +5,6 @@ import numpy as np
 import spacy
 import torch
 import torch.nn as nn
-import time
-from joblib import Memory, Parallel, delayed
 from natasha import (Doc, MorphVocab, NamesExtractor, NewsEmbedding,
                      NewsMorphTagger, NewsNERTagger, NewsSyntaxParser,
                      Segmenter)
@@ -15,19 +13,14 @@ from nltk.corpus import stopwords
 from nltk.tokenize import RegexpTokenizer
 from transformers import BertModel, BertTokenizer
 from wikidata.client import Client as WDClient
-from wikidata.cache import MemoryCachePolicy as WDCachePolicy
-
-from app.config import DEFAULT_CACHE_PATH
 
 from .utils.utils import get_wd_search_results
 
-memory = Memory(DEFAULT_CACHE_PATH, verbose=0)
-
 
 class EncoderBERT(nn.Module):
-    def __init__(self, encoder_ckpt_path):
+    def __init__(self):
         super(EncoderBERT,self).__init__()
-        self.encoder =  BertModel.from_pretrained(encoder_ckpt_path)
+        self.encoder =  BertModel.from_pretrained("bert-base-multilingual-cased")
 
     def forward(self, questions):
         q_ids = torch.tensor(questions)
@@ -159,17 +152,16 @@ class NounsExtractor():
 class M3MQA():
     def __init__(
         self,
-        encoder_ckpt_path: str = "encoder_ckpt_path",
-        projection_e_ckpt_path: str = "ckpts/projection_E",
-        projection_q_ckpt_path: str = "ckpts/projection_Q",
-        projection_p_ckpt_path: str = "ckpts/projection_P",
-        embeddings_path_q: str = "../table-qa/new_data/entitie_embeddings_ru_tensor.pt",
-        embeddings_path_p: str = "../table-qa/new_data/entitie_P_embeddings_ru_tensor.pt",
-        id2ind_path: str = '../table-qa/new_data/id2ind.npy'
-        p2ind_path: str = '../table-qa/new_data/p2ind.npy'
-        wikidata_cach_path: str = '../table-qa/wikidata_correct_cache.npy'
-        
-        max_presearch: int = 7,#убрать?
+        encoder_ckpt_path: str,
+        projection_e_ckpt_path: str,
+        projection_q_ckpt_path: str,
+        projection_p_ckpt_path: str,
+        embeddings_path_q: str,
+        embeddings_path_p: str,
+        id2ind_path: str,
+        p2ind_path: str,
+        wikidata_cach_path: str,
+        max_presearch: int = 7,
         max_len_q: int = 64, 
         device: str = 'cpu',
     ):
@@ -180,7 +172,9 @@ class M3MQA():
         self.nouns_extractor = NounsExtractor()
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
 
-        self.encoder = EncoderBERT(encoder_ckpt_path)
+        # self.encoder = torch.load(encoder_ckpt_path, map_location=torch.device(device)).to(device)
+        self.encoder = EncoderBERT()
+        self.encoder.load_state_dict(torch.load(encoder_ckpt_path, map_location=torch.device(device)))
         self.encoder.to(device)
         self.projection_E = torch.load(projection_e_ckpt_path, map_location=torch.device(device)).to(device)
         self.projection_Q = torch.load(projection_q_ckpt_path, map_location=torch.device(device)).to(device)
@@ -191,8 +185,8 @@ class M3MQA():
         
         self.wikidata_cache = np.load(wikidata_cach_path, allow_pickle=True).all()
         
-        self.id2ind = np.load(id2ind_path)
-        self.p2ind = np.load(p2ind_path)
+        self.id2ind = np.load(id2ind_path, allow_pickle=True)
+        self.p2ind = np.load(p2ind_path, allow_pickle=True)
 
     def __call__(self, question: str):
         nouns = self.nouns_extractor(question)
@@ -218,10 +212,9 @@ class M3MQA():
         second_hop_graph_P = []
         second_hop_ids_filtered_P = []
         ids_filtered_E = []
-        ids_filtered_E = []
         for key in second_hop_ids_QP.keys():
             for (idd_q, idd_p) in second_hop_ids_QP[key]:
-                if idd_q in id2ind and idd_p in p2ind and key in self.id2ind:
+                if idd_q in self.id2ind and idd_p in self.p2ind and key in self.id2ind:
                     ids_filtered_E.append(key)
                     first_hop_graph_E.append(self.embeddings_tensor_Q[self.id2ind[key]].cpu().numpy())
                     second_hop_ids_filtered_Q.append(idd_q)
@@ -238,11 +231,8 @@ class M3MQA():
             second_hop_ids_filtered_Q,
             second_hop_ids_filtered_P,
             ids_filtered_E,
-            second_hop_ids_filtered_P,
-            ids_filtered_E,
             min(50,len(second_hop_graph_Q)),
         )
-        
         
         UE = scores[0] - scores[1]
         return triples, predicts, scores.detach().cpu().numpy(), UE.item()
@@ -256,7 +246,7 @@ class M3MQA():
         second_hop_graph_P,
         second_hop_ids_filtered_Q,
         second_hop_ids_filtered_P,
-        ids_filtered_E
+        ids_filtered_E,
         topk,
     ):
         self.projection_E.eval()
@@ -269,9 +259,9 @@ class M3MQA():
             y_pred_q = self.projection_Q(self.encoder(X[None,:].to(self.device)))
             y_pred_p = self.projection_P(self.encoder(X[None,:].to(self.device)))
 
-#             embeddings_tensor_E = torch.tensor(first_hop_graph_E, dtype=torch.float)
-#             embeddings_tensor_Q = torch.tensor(second_hop_graph_Q, dtype=torch.float)
-#             embeddings_tensor_P = torch.tensor(second_hop_graph_P, dtype=torch.float)
+            embeddings_tensor_E = torch.tensor(first_hop_graph_E, dtype=torch.float)
+            embeddings_tensor_Q = torch.tensor(second_hop_graph_Q, dtype=torch.float)
+            embeddings_tensor_P = torch.tensor(second_hop_graph_P, dtype=torch.float)
 
 
             cosines_descr_E = torch.cosine_similarity(embeddings_tensor_E.cpu(),y_pred_e.cpu())
