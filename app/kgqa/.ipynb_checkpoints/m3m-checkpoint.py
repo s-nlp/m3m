@@ -156,11 +156,11 @@ class M3MQA():
         projection_e_ckpt_path: str = "ckpts/projection_E",
         projection_q_ckpt_path: str = "ckpts/projection_Q",
         projection_p_ckpt_path: str = "ckpts/projection_P",
-        embeddings_path_q: str = "../table-qa/new_data/entitie_embeddings_ru_tensor.pt",
-        embeddings_path_p: str = "../table-qa/new_data/entitie_P_embeddings_ru_tensor.pt",
-        id2ind_path: str = '../table-qa/new_data/id2ind.npy'
-        p2ind_path: str = '../table-qa/new_data/p2ind.npy'
-        wikidata_cach_path: str = '../table-qa/wikidata_correct_cache.npy'
+        embeddings_path_q: str = "../table-qa/new_data/entitie_embeddings_ru_tensor.npy",
+        embeddings_path_p: str = "../table-qa/new_data/entitie_P_embeddings_ru_tensor.npy",
+        id2ind_path: str = '../table-qa/new_data/id2ind.npy',
+        p2ind_path: str = '../table-qa/new_data/p2ind.npy',
+        wikidata_cach_path: str = '../table-qa/wikidata_correct_cache.npy',
         
         max_presearch: int = 7,#убрать?
         max_len_q: int = 64, 
@@ -181,8 +181,8 @@ class M3MQA():
         self.projection_Q = torch.load(projection_q_ckpt_path, map_location=torch.device(device)).to(device)
         self.projection_P = torch.load(projection_p_ckpt_path, map_location=torch.device(device)).to(device)
 
-        self.embeddings_tensor_Q = torch.load(embeddings_path_q)
-        self.embeddings_tensor_P = torch.load(embeddings_path_p)
+        self.embeddings_tensor_Q = torch.FloatTensor(np.load(embeddings_path_q, allow_pickle=True))
+        self.embeddings_tensor_P = torch.FloatTensor(np.load(embeddings_path_p, allow_pickle=True))
         
         self.wikidata_cache = np.load(wikidata_cach_path, allow_pickle=True).all()
         
@@ -247,7 +247,7 @@ class M3MQA():
         second_hop_graph_P,
         second_hop_ids_filtered_Q,
         second_hop_ids_filtered_P,
-        ids_filtered_E
+        ids_filtered_E,
         topk,
     ):
         self.projection_E.eval()
