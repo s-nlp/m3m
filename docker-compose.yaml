@@ -3,7 +3,7 @@ services:
   app:
     build: ./
     ports:
-      - 8080:8080
+      - 8085:8085
     volumes:
       - /home/salnikov/qa_prod/app:/code/app
       - /home/salnikov/data/m3m:/data/m3m
