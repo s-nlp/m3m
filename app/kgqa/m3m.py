@@ -280,7 +280,7 @@ class M3MQA():
             Q = np.array(second_hop_ids_filtered_Q)[inds]
             final_triples = []
             for p, e, q in zip(P,E,Q):
-                final_triples.append((e,p,q)
+                final_triples.append((e,p,q))
         return Q, cosines_aggr[inds], np.array(final_triples)
         
 
