@@ -13,7 +13,7 @@ seq2seq = {
 }
 
 m3m = {
-    "encoder_ckpt_path": "s-nlp/m3m_bert_encoder",
+    "encoder_ckpt_path": "/data/m3m/ckpts/encoder.pt",
     "projection_e_ckpt_path": "/data/m3m/ckpts/projection_E",
     "projection_q_ckpt_path": "/data/m3m/ckpts/projection_Q",
     "projection_p_ckpt_path": "/data/m3m/ckpts/projection_P",

@@ -278,7 +278,7 @@
 
         $(document).ready(function() {
             $.ajax({
-                url: '/pipeline/' + pipeline_switcher('{{pipeline}}'),
+                url: '/pipeline/' + pipeline_switcher('{{pipeline}}') + '/',
                 method: 'POST',
                 data: JSON.stringify({text: '{{question}}'}),
                 contentType: "application/json; charset=utf-8",
