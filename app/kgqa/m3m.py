@@ -132,7 +132,6 @@ class NounsExtractor():
             ents += [str(text4)]
         
 
-        nouns_set = None
         if len(ents) == 0:
             doc = self.nlp(text)
             ents = [token.lemma_ for token in doc if token.pos_ == "NOUN" or token.pos_ == "PROPN"]
@@ -142,11 +141,11 @@ class NounsExtractor():
             unigrams = self.reg_tokenizer.tokenize(text)
             unigrams = [word for word in unigrams if not word in self.stops]
             ents += unigrams
-            nouns_set = set(ents)
+            ents = set(ents)
             
-        if nouns_set and "" in nouns_set:
-            nouns_set.remove("")
-        return list(nouns_set)
+        if ents and "" in ents:
+            ents.remove("")
+        return list(ents)
 
 
 class M3MQA():
@@ -185,8 +184,8 @@ class M3MQA():
         
         self.wikidata_cache = np.load(wikidata_cach_path, allow_pickle=True).all()
         
-        self.id2ind = np.load(id2ind_path, allow_pickle=True)
-        self.p2ind = np.load(p2ind_path, allow_pickle=True)
+        self.id2ind = np.load(id2ind_path, allow_pickle=True).all()
+        self.p2ind = np.load(p2ind_path, allow_pickle=True).all()
 
     def __call__(self, question: str):
         nouns = self.nouns_extractor(question)
@@ -276,13 +275,13 @@ class M3MQA():
             cosines_aggr = cosines_descr_P + cosines_descr_Q + cosines_descr_E
             inds = torch.topk(cosines_aggr,topk,sorted=True).indices.cpu().numpy()
             
-            P = second_hop_ids_filtered_P[inds]
-            E = ids_filtered_E[inds]
-            Q = second_hop_ids_filtered_Q[inds]
+            P = np.array(second_hop_ids_filtered_P)[inds]
+            E = np.array(ids_filtered_E)[inds]
+            Q = np.array(second_hop_ids_filtered_Q)[inds]
             final_triples = []
             for p, e, q in zip(P,E,Q):
-                final_triples.append(e,p,q)
-        return np.array(final_triples), Q, cosines_aggr[inds]
+                final_triples.append((e,p,q)
+        return Q, cosines_aggr[inds], np.array(final_triples)
         
 
 #     def _init_graph_embeddings(self, embeddings_path: str):
