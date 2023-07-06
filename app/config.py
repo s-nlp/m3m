@@ -10,6 +10,7 @@ seq2seq = {
     },
     "examples": [],
     "device": "cuda:0",
+    # "device": "cpu",
 }
 
 m3m = {
@@ -25,6 +26,8 @@ m3m = {
     "max_presearch": 7,
     "max_len_q": 64,
     "device": "cuda",
+    # "device": "cpu",
+    "aliases_leveldb_path": "/data/wikidata/aliases_lvldb/"
  }
 
 # m3m = {
