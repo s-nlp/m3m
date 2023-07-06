@@ -3,10 +3,11 @@ services:
   app:
     build: ./
     ports:
-      - 8085:8085
+      - 8080:8080
     volumes:
       - /home/salnikov/qa_prod/app:/code/app
       - /home/salnikov/data/m3m:/data/m3m
+      - /mnt/raid/salnikov/wikidata/:/data/wikidata
     environment:
       - TOKENIZERS_PARALLELISM=false
     deploy:

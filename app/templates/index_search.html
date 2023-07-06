@@ -81,20 +81,28 @@
                 return aVal - bVal;
             }));
         }
+
+        function m3m_uncertanity_to_decision(uncertanity, score_threshold=0.000149) {
+            if (uncertanity > score_threshold) {
+                return '<span class="bg-red-800 rounded-md text-white my-3 p-2">High Uncertainty</span>'
+            } else {
+                return '<span class="bg-green-800 rounded-md text-white my-3 p-2">Low Uncertainty</span>'
+            }
+        }
         
         function process_pipeline_data(pipeline_data) {
             const queryString = window.location.search;
             const urlParams = new URLSearchParams(queryString);
             const pipeline = urlParams.get('pipeline');
 
-            if (pipeline == 'm3m') {
+            graph_svg = $(document.createElement('div')).addClass("my-3");
+            $("#details").append(graph_svg);
+
+            if (pipeline == 'm3m' || pipeline == 'm3m_obj_question_matching' || pipeline == 'm3m_obj_question_similarity') {
                 $("#details").append(
-                    "Uncertainty: <b>"+String(pipeline_data['uncertenity'])+"</b>"
+                    "<b>"+m3m_uncertanity_to_decision(pipeline_data['uncertenity'])+"</b>"
                 );
             }
-
-            graph_svg = $(document.createElement('div'));
-            $("#details").append(graph_svg);
 
             if (pipeline == 'act_selection' || pipeline == 'act_selection_simple' || pipeline == 'act_selection_simple_description') {
                 question_entities = $(document.createElement('div'));
@@ -204,7 +212,14 @@
         
                             $("#top_answer_card").append(body);
                             
-                            if (pipeline == 'act_selection' || pipeline == 'act_selection_simple' || pipeline == 'act_selection_simple_description' || pipeline == 'm3m') {
+                            if (
+                                pipeline == 'act_selection' || 
+                                pipeline == 'act_selection_simple' || 
+                                pipeline == 'act_selection_simple_description' || 
+                                pipeline == 'm3m' ||
+                                pipeline == 'm3m_obj_question_matching' ||
+                                pipeline == 'm3m_obj_question_similarity'
+                            ) {
                                 let question_entities_idx = [];
                                 if (pipeline == 'act_selection' || pipeline == 'act_selection_simple' || pipeline == 'act_selection_simple_description') {
                                     pipeline_data['question_entities'].forEach(obj => {
@@ -271,6 +286,10 @@
                 return 'act_selection/simple_with_description_qustion_similarity_type_selection'
             } else if (pipeline_name == 'm3m') {
                 return 'm3m'
+            } else if (pipeline_name == 'm3m_obj_question_similarity') {
+                return 'm3m/m3m_obj_question_similarity'
+            } else if (pipeline_name == 'm3m_obj_question_matching') {
+                return 'm3m/m3m_obj_question_matching'
             } else {
                 return pipeline_name
             }

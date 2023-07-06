@@ -3,6 +3,7 @@ from typing import Optional
 import requests
 from joblib import Memory
 from pywikidata import Entity
+from langdetect import detect
 
 from app.config import DEFAULT_CACHE_PATH
 
@@ -39,13 +40,12 @@ def label_to_entity_idx(label: str) -> Optional[str]:
 def get_wd_search_results(
     search_string: str,
     max_results: int = 500,
-    language: str = 'en',
     mediawiki_api_url: str = "https://www.wikidata.org/w/api.php",
     user_agent: str = None,
 ) -> list:
     params = {
         'action': 'wbsearchentities',
-        'language': language,
+        'language': detect(search_string),
         'search': search_string,
         'format': 'json',
         'limit': 50

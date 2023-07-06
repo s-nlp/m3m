@@ -163,6 +163,8 @@ class M3MQA():
         max_presearch: int = 7,
         max_len_q: int = 64, 
         device: str = 'cpu',
+        *args,
+        **kwards,
     ):
         self.max_presearch = max_presearch
         self.max_len_q = max_len_q

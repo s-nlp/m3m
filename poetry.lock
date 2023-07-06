@@ -822,6 +822,21 @@ files = [
 data = ["language-data (>=1.1,<2.0)"]
 
 [[package]]
+name = "langdetect"
+version = "1.0.9"
+description = "Language detection library ported from Google's language-detection."
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "langdetect-1.0.9-py2-none-any.whl", hash = "sha256:7cbc0746252f19e76f77c0b1690aadf01963be835ef0cd4b56dddf2a8f1dfc2a"},
+    {file = "langdetect-1.0.9.tar.gz", hash = "sha256:cbc1fef89f8d062739774bd51eda3da3274006b3661d199c2655f6b3f6d605a0"},
+]
+
+[package.dependencies]
+six = "*"
+
+[[package]]
 name = "markupsafe"
 version = "2.1.2"
 description = "Safely add untrusted strings to HTML/XML markup."
@@ -1315,6 +1330,22 @@ docs = ["furo (>=2022.12.7)", "proselint (>=0.13)", "sphinx (>=6.1.3)", "sphinx-
 test = ["appdirs (==1.4.4)", "covdefaults (>=2.2.2)", "pytest (>=7.2.1)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
 
 [[package]]
+name = "plyvel"
+version = "1.5.0"
+description = "Plyvel, a fast and feature-rich Python interface to LevelDB"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "plyvel-1.5.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:92d949ec657f58e966ee5cc58ea51c436b61e43b86247656f1b6d4a987782a35"},
+    {file = "plyvel-1.5.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:48df7416267977641e9ff82a2bce022e6f5e91889eae95322685fccf6ec9a3d7"},
+    {file = "plyvel-1.5.0-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f3b5ddaaa7b019db805a74cba52c39d88dd6447add1cb2620b0195115e4aa68b"},
+    {file = "plyvel-1.5.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c480b57848e31c2e47029d3fb0f57ad4fc6a9204867e51bbdcf81a62df75de4b"},
+    {file = "plyvel-1.5.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cb217f52215ac715091396bcbaf645d4ef8eb4b5dd9f96ef01abc0aaed45e2ca"},
+    {file = "plyvel-1.5.0.tar.gz", hash = "sha256:cd918e0b31690abcd3d202a8742caf951ab2fe1573de7af71c38456847f9202b"},
+]
+
+[[package]]
 name = "preshed"
 version = "3.0.8"
 description = "Cython hash table that trusts the keys are pre-hashed"
@@ -1578,14 +1609,14 @@ six = ">=1.5"
 
 [[package]]
 name = "pywikidata"
-version = "0.1.6"
+version = "0.1.8"
 description = "Python Wrapper for Wikidata KG"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "pywikidata-0.1.6-py3-none-any.whl", hash = "sha256:a84acea2166e6748f9b5a0a52641acfce0b9226e6a3bd86821c54179ccdfb1b3"},
-    {file = "pywikidata-0.1.6.tar.gz", hash = "sha256:82dffa93427a9a73c6129e7384d7b7b930bca5dce4c45a0d9f89bed5e4181b0b"},
+    {file = "pywikidata-0.1.8-py3-none-any.whl", hash = "sha256:5fd224cf5de1bf77a46f7eb8c9ced3c437dedbf7931ea2576ab99f737b0b380e"},
+    {file = "pywikidata-0.1.8.tar.gz", hash = "sha256:56e6c01fc7557460fc97611be173efc6a662a1b19a30c642bcb5107de1430b36"},
 ]
 
 [package.dependencies]
@@ -2061,7 +2092,7 @@ testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 files = [
@@ -2832,4 +2863,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "765b109355c4f881ab2c5eac1571b4b0415febb51cfc013d93a8a98411f78bad"
+content-hash = "e46b0f76da20ea0165de3cc47f27c53086252b8a228590d5fbeccdbe413a8448"
