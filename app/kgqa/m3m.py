@@ -206,7 +206,6 @@ class M3MQA():
                 triplets = [(s, p) for p,s in zip(triplets[0:-1:2], triplets[1::2])]
                 second_hop_ids_QP[idd] = triplets
 
-
         first_hop_graph_E = []
         second_hop_graph_Q = []
         second_hop_ids_filtered_Q = []
