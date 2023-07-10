@@ -56,7 +56,7 @@ def m3m_pipeline(question: QuestionRequest) -> M3MPipelineResponce:
 m3m_matching = M3MQAmatching(**m3m_config)
 
 @lru_cache(maxsize=1024)
-@router.post("/m3m_subj_question_matching")
+@router.post("/m3m_subj_question_matching/")
 def m3m_object_label_to_question_matching_pipeline(question: QuestionRequest) -> M3MPipelineResponce:
     m3m_results = m3m_matching(question.text)
     if m3m_results is None:
