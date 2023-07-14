@@ -44,4 +44,4 @@ Question answering in natural language is a key method for fulfilling informatio
 
 If you find some issue, do not hesitate to add it to [Github Issues](https://github.com/skoltech-nlp/m3m/issues).
 
-For any questions and the **test part** of the data, please contact: Anton Razzhigaev (anton.razzhigaev@skol.tech)
+For any questions please contact: Anton Razzhigaev (anton.razzhigaev@skol.tech)
