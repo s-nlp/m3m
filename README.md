@@ -17,3 +17,31 @@ Question answering in natural language is a key method for fulfilling informatio
 * Create file with pipeline name in `app/pipelines/pipeline_name.py` and put fastAPI router for pipeline here. All pipelines route methods must reture `PipelineResponce` object. You can add your own responce class to `app/models`, but it should be inhered from `PipelineResponce`.
 * Add router to `app/main.py`: `app.include_router(pipeline_name.router)` (Now your pipeline must be availabe at backend level. Check it on /docs)
 * Add pipeline_name to app/templates/search_bar.html in pipeline selector
+
+
+## Citation
+
+```
+@inproceedings{razzhigaev-etal-2023-system,
+    title = "A System for Answering Simple Questions in Multiple Languages",
+    author = "Razzhigaev, Anton  and
+      Salnikov, Mikhail  and
+      Malykh, Valentin  and
+      Braslavski, Pavel  and
+      Panchenko, Alexander",
+    booktitle = "Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 3: System Demonstrations)",
+    month = jul,
+    year = "2023",
+    address = "Toronto, Canada",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2023.acl-demo.51",
+    pages = "524--537",
+    abstract = "Our research focuses on the most prevalent type of queries{---} simple questions {---}exemplified by questions like {``}What is the capital of France?{''}. These questions reference an entity such as {``}France{''}, which is directly connected (one hop) to the answer entity {``}Paris{''} in the underlying knowledge graph (KG). We propose a multilingual Knowledge Graph Question Answering (KGQA) technique that orders potential responses based on the distance between the question{'}s text embeddings and the answer{'}s graph embeddings. A system incorporating this novel method is also described in our work.Through comprehensive experimentation using various English and multilingual datasets and two KGs {---} Freebase and Wikidata {---} we illustrate the comparative advantage of the proposed method across diverse KG embeddings and languages. This edge is apparent even against robust baseline systems, including seq2seq QA models, search-based solutions and intricate rule-based pipelines. Interestingly, our research underscores that even advanced AI systems like ChatGPT encounter difficulties when tasked with answering simple questions. This finding emphasizes the relevance and effectiveness of our approach, which consistently outperforms such systems. We are making the source code and trained models from our study publicly accessible to promote further advancements in multilingual KGQA.",
+}
+```
+
+## Contacts
+
+If you find some issue, do not hesitate to add it to [Github Issues](https://github.com/skoltech-nlp/m3m/issues).
+
+For any questions and the **test part** of the data, please contact: Anton Razzhigaev (anton.razzhigaev@skol.tech)
