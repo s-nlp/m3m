@@ -28,7 +28,18 @@ m3m = {
     "device": "cuda",
     # "device": "cpu",
     "aliases_leveldb_path": "/data/wikidata/aliases_lvldb/"
- }
+}
+
+g2t = {
+    "model": {
+        "path": os.environ.get(
+            "G2T_MODEL_PATH",
+            "s-nlp/g2t-t5-xl-webnlg",
+        )
+    },
+    # "device": "cuda",
+    "device": "cpu",
+}
 
 # m3m = {
 #     "encoder_ckpt_path": "s-nlp/m3m_bert_encoder",
