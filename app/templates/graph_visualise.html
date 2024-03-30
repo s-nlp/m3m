@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex justify-center my-60">
+    <div class="flex flex-col justify-center max-w-4xl">
+        <h2 class="text-center mb-4 pb-4 text-5xl leading-tight">Describe Graph!</h2>
+        <div id="ask" class="w-5/6 sm:min-w-[30rem] m-0 mr-1 grid grid-flow-col auto-cols-max">
+            <label for="inputData" class="mb-2 text-sm font-medium text-gray-900 sr-only">Search</label>
+            <div class="relative w-[40rem]">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <svg aria-hidden="true" class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <input id='inputData' type="search" class="block w-full p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500" placeholder="Q2, Q3 -> Q4" required>
+                <button id="submit" class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Show graph</button>
+            </div>
+        </div>
+        <div class="text-wrap text-red-500 my-4" id="errorText" style="display: none"></div>
+        <div class="flex flex-col">
+            <div id="graphBox" class="flex flex-col" style="display: none">
+                <h4 class="my-6 text-2xl font-medium leading-tight">Graph</h4>
+                <div class="self-center" id="graphImg"></div>
+                <h4 class="my-6 text-2xl font-medium leading-tight">Description</h4>
+                <div class="text-wrap" id="graphDescription"></div>
+            </div>
+            <div id="graphLoader" class="my-16 self-center inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-e-transparent align-[-0.125em] text-surface motion-reduce:animate-[spin_1.5s_linear_infinite] dark:text-white" role="status" style="display: none"></div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.3.js" integrity="sha256-nQLuAZGRRcILA+6dMBOvcRh5Pe310sBpanc6+QBmyVM=" crossorigin="anonymous"></script>
+    <script>
+        function isNumeric(value) {
+            return /^\d+$/.test(value);
+        }
+
+        function isValidNode(nodeStr) {
+            const isLongEnough = nodeStr.length >= 2
+            if (!isLongEnough) {
+                return false
+            }
+            const startsWithQ = nodeStr[0] === 'Q'
+            if (!startsWithQ) {
+                return false
+            }
+            return isNumeric(nodeStr.slice(1))
+        }
+
+        function parseInput(inputText) {
+            const arrowSplit = inputText.split("->");
+            if (arrowSplit.length !== 2) {
+                return [null, "Failed to find single arrow `->`. Please follow pattern `Q1, Q2 -> Q3`"]
+            }
+            const [questionEntitiesRaw, answerEntityRaw] = arrowSplit;
+
+            const questionSplit = questionEntitiesRaw.split(",");
+            const questionEntities = questionSplit.map((x) => x.trim());
+            for (let i = 0; i < questionEntities.length; i++) {
+                if (!isValidNode(questionEntities[i])) {
+                    return [null, `Failed to parse question entities. Please follow pattern 'Q1, Q2 -> Q3'. Wrong entity: '${questionEntities[i]}'`]
+                }
+            }
+
+            const answerEntity = answerEntityRaw.trim();
+            if (!isValidNode(answerEntity)) {
+                    return [null, null, `Failed to parse answer entity. Please follow pattern 'Q1, Q2 -> Q3'. Wrong entity: '${answerEntity}'`]
+                }
+
+            return [{question_entities_idx: questionEntities, answer_idx: answerEntity}, ""]
+        }
+
+        function apiCall(data, url) {
+            return $.ajax({
+                url: url,
+                method: 'POST',
+                data: JSON.stringify(data),
+                contentType: "application/json; charset=utf-8",
+                dataType: 'json',
+                cache: true
+            })
+        }
+
+        $(document).ready(function() {
+            $("#submit").click(function() {
+                const inputText = $("#inputData").val();
+                const [data, errorText] = parseInput(inputText);
+                if (errorText !== "") {
+                    $("#errorText").text(errorText);
+                    $("#errorText").show();
+                } else {
+                    $("#errorText").hide();
+                    $("#errorText").text("");
+                    $('#graphBox').hide();
+                    $('#graphLoader').show();
+                    $.when(
+                        apiCall(data, '../wikidata/entities/ssp/graph/svg'),
+                        apiCall(data, '../wikidata/entities/ssp/graph/description')
+                    ).done(function(svgOutput, descriptionOutput) {
+                        const [svgData] = svgOutput;
+                        const [descriptionData] = descriptionOutput;
+                        $('#graphBox').show();
+                        $('#graphLoader').hide();
+                        $('#graphImg').empty();
+                        $('#graphImg').append(String(svgData));
+                        $("#graphDescription").text(descriptionData);
+                    }).fail(function(xhr, status, error) {
+                        $('#graphLoader').hide();
+                        if (xhr.status === 0) {
+                            $("#errorText").text(`Server disconnected`);
+                        } else {
+                            $("#errorText").text(`${xhr.status} ${error}`);
+                        }
+                        $("#errorText").show();
+                    })
+                }
+            });
+        });
+    </script>
+</div>
+
+
+{% endblock %}

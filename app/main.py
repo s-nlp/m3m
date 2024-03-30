@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import Field
 from pywikidata import Entity
 
+from app.kgqa.graph2text import Graph2Text
 from app.kgqa.m3m import M3MQA, EncoderBERT
 from app.kgqa.utils.graph_viz import SubgraphsRetriever, plot_graph_svg
 from app.models.base import Entity as EntityResponce
@@ -32,7 +33,7 @@ app.add_middleware(
 )
 
 templates = Jinja2Templates(directory="app/templates")
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.include_router(act_selection.router)
 app.include_router(seq2seq.router)
@@ -59,6 +60,16 @@ async def index(request: Request, question: str = "", pipeline: str = "seq2seq")
         )
 
 
+@app.get("/graph", response_class=HTMLResponse)
+async def graph(request: Request):
+    return templates.TemplateResponse(
+        "graph_visualise.html",
+        {
+            "request": request
+        },
+    )
+
+
 @app.get("/wikidata/entities/{idx}")
 async def entity_details(idx: str) -> EntityResponce:
     entity = Entity(idx)
@@ -78,6 +89,17 @@ async def entity_label(idx: str) -> EntityResponce:
         idx=entity.idx,
         label=entity.label,
     )
+
+
+@app.post("/wikidata/entities/ssp/graph/description")
+async def ssp_subgraph_svg(request: WikidataSSPRequest) -> str:
+    sr = SubgraphsRetriever()
+    g2t = Graph2Text()
+    graph, _ = sr.get_subgraph(request.question_entities_idx, request.answer_idx)
+    triplets = [(Entity(x).label, Entity(weight).label, Entity(y).label) for (x, y, weight) in graph.edges.data('label')]
+    triplets = tuple(triplets)  # For cache
+    graph_description = g2t(triplets)
+    return graph_description
 
 
 @app.post("/wikidata/entities/ssp/graph/svg")

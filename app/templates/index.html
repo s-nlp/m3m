@@ -1,14 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="grid place-content-center my-60">
-    <div class="max-w-4xl">
+<div class="flex flex-col items-center my-60">
+    <div class="flex flex-col items-center max-w-4xl">
         {% include "search_bar.html" %}
-
-        <div class="my-5 flex flex-wrap">
+        <div class="my-5 self-start flex flex-wrap">
             <a href="/?question=Who+was+the+first+president+of+USA%3F" class="border border-slate-400 m-2 rounded-md p-3 font-bold bg-slate-300 hover:bg-slate-400">Who was the first president of USA?</a>
             <a href="/?question=The+capital+of+France%3F" class="border border-slate-400 m-2 rounded-md p-3 font-bold bg-slate-300 hover:bg-slate-400">The capital of France?</a>
             <a href="/?question=What+is+Ellen+Swallow+Richards's+nationality%3F" class="border border-slate-400 m-2 rounded-md p-3 font-bold bg-slate-300 hover:bg-slate-400">What is Ellen Swallow Richards's nationality?</a>
+        </div>
+        <hr class="my-0 px-8 h-0.5 border-t-0 bg-neutral-100 dark:bg-white/10 w-10/12" />
+        <div class="my-5 self-start flex flex-wrap items-start max-w-4xl">
+            <a href="/graph" class="border border-slate-400 m-2 rounded-md p-2 font-medium bg-info-300 hover:bg-neutral-50">Describe graph</a>
         </div>
     </div>
 </div>
