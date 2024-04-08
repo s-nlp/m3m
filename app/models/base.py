@@ -1,6 +1,7 @@
 from typing import Optional
 
 from pydantic import BaseModel
+from spacy.tokens.doc import Enum
 
 
 class Question(BaseModel):
@@ -50,7 +51,17 @@ class M3MPipelineResponce(PipelineResponce):
     triples: list[list[str]]
 
 
+class G2TModels(Enum):
+    GAP_MODEL_NAME = 'gap'
+    T5_MODEL_NAME = 'g2t-t5-xl'
+
+
+class WikidataG2TRequest(BaseModel):
+    question_entities_idx: list[str]
+    answer_idx: str
+    model: G2TModels = G2TModels.T5_MODEL_NAME
+
+
 class WikidataSSPRequest(BaseModel):
     question_entities_idx: list[str]
     answer_idx: str
-

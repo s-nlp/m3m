@@ -8,11 +8,12 @@ from pywikidata import Entity
 from app.kgqa.graph2text import Graph2Text
 from app.kgqa.m3m import M3MQA, EncoderBERT
 from app.kgqa.utils.graph_viz import SubgraphsRetriever, plot_graph_svg
-from app.models.base import Entity as EntityResponce
+from app.kgqa.utils.utils import validate_or_search_entity_idx
+from app.models.base import Entity as EntityResponce, WikidataG2TRequest
 from app.models.base import WikidataSSPRequest
 from app.pipelines import seq2seq
 from app.pipelines import act_selection
-from app.pipelines import m3m
+# from app.pipelines import m3m
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -37,7 +38,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 app.include_router(act_selection.router)
 app.include_router(seq2seq.router)
-app.include_router(m3m.router)
+# app.include_router(m3m.router)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -92,20 +93,32 @@ async def entity_label(idx: str) -> EntityResponce:
 
 
 @app.post("/wikidata/entities/ssp/graph/description")
-async def ssp_subgraph_svg(request: WikidataSSPRequest) -> str:
+async def ssp_subgraph_description(request: WikidataG2TRequest) -> str:
     sr = SubgraphsRetriever()
     g2t = Graph2Text()
-    graph, _ = sr.get_subgraph(request.question_entities_idx, request.answer_idx)
-    triplets = [(Entity(x).label, Entity(weight).label, Entity(y).label) for (x, y, weight) in graph.edges.data('label')]
+    verified_question_entities_idx = [validate_or_search_entity_idx(entity) for entity in request.question_entities_idx]
+    verified_question_entities_idx = list(filter(lambda x: x is not None, verified_question_entities_idx))
+    verified_answer_idx = validate_or_search_entity_idx(request.answer_idx)
+    if len(verified_question_entities_idx) == 0 or verified_answer_idx is None:
+        raise HTTPException(status_code=400, detail="Bad input entities")
+
+    graph, _ = sr.get_subgraph(verified_question_entities_idx, verified_answer_idx)
+    triplets = [(x, weight, y) for (x, y, weight) in graph.edges.data('label')]
     triplets = tuple(triplets)  # For cache
-    graph_description = g2t(triplets)
+    graph_description = g2t(triplets, request.answer_idx, tuple(request.question_entities_idx), request.model)
     return graph_description
 
 
 @app.post("/wikidata/entities/ssp/graph/svg")
 async def ssp_subgraph_svg(request: WikidataSSPRequest) -> str:
     sr = SubgraphsRetriever()
-    graph, _ = sr.get_subgraph(request.question_entities_idx, request.answer_idx)
+    verified_question_entities_idx = [validate_or_search_entity_idx(entity) for entity in request.question_entities_idx]
+    verified_question_entities_idx = list(filter(lambda x: x is not None, verified_question_entities_idx))
+    verified_answer_idx = validate_or_search_entity_idx(request.answer_idx)
+    if len(verified_question_entities_idx) == 0 or verified_answer_idx is None:
+        raise HTTPException(status_code=400, detail="Bad input entities")
+
+    graph, _ = sr.get_subgraph(verified_question_entities_idx, verified_answer_idx)
     graph_svg = plot_graph_svg(graph)
     return graph_svg.pipe(format='svg').replace(b'\n', b'')
 
