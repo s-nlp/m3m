@@ -10,6 +10,12 @@ services:
       - /mnt/raid/salnikov/wikidata/:/data/wikidata
     environment:
       - TOKENIZERS_PARALLELISM=false
+      - GAP_HOST=host.docker.internal
+      - GAP_PORT=8089
+  gap:
+    build: ./gap
+    environment:
+      - TOKENIZERS_PARALLELISM=false
     deploy:
       resources:
           reservations:

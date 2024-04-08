@@ -39,6 +39,14 @@ g2t = {
     },
     # "device": "cuda",
     "device": "cpu",
+    "gap_host": os.environ.get(
+        "GAP_HOST",
+        "localhost"
+    ),
+    "gap_port": os.environ.get(
+        "GAP_PORT",
+        "8089"
+    ),
 }
 
 # m3m = {

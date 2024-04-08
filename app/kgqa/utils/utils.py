@@ -36,6 +36,26 @@ def label_to_entity_idx(label: str) -> Optional[str]:
     return idx
 
 
+def label_to_entity_idx_with_search(label: str) -> Optional[str]:
+    full_match_result = label_to_entity_idx(label)
+    if full_match_result is not None:
+        return full_match_result
+
+    search_results = get_wd_search_results(label, 1)
+    if len(search_results) > 0:
+        return search_results[0]
+    else:
+        return None
+
+
+def is_valid_entity_idx(idx: str) -> bool:
+    return len(idx) > 1 and idx[0].capitalize() == 'Q' and idx[1:].isdigit() and int(idx[1:]) > 0
+
+
+def validate_or_search_entity_idx(idx: str) -> Optional[str]:
+    return idx if is_valid_entity_idx(idx) else label_to_entity_idx_with_search(idx)
+
+
 @memory.cache
 def get_wd_search_results(
     search_string: str,
