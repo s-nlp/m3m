@@ -36,4 +36,4 @@ RUN python3 -m spacy download ru_core_news_sm && \
 COPY ./app /code/app
 COPY ./data /data/
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--forwarded-allow-ips='*'", "--proxy-headers"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8082", "--forwarded-allow-ips='*'", "--proxy-headers"]

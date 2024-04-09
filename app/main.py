@@ -6,7 +6,7 @@ from pydantic import Field
 from pywikidata import Entity
 
 from app.kgqa.graph2text import Graph2Text
-from app.kgqa.m3m import M3MQA, EncoderBERT
+# from app.kgqa.m3m import M3MQA, EncoderBERT
 from app.kgqa.utils.graph_viz import SubgraphsRetriever, plot_graph_svg
 from app.kgqa.utils.utils import validate_or_search_entity_idx
 from app.models.base import Entity as EntityResponce, WikidataG2TRequest

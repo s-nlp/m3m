@@ -3,19 +3,15 @@ services:
   app:
     build: ./
     ports:
-      - 8080:8080
+      - 8085:8082
     volumes:
-      - /home/salnikov/qa_prod/app:/code/app
-      - /home/salnikov/data/m3m:/data/m3m
-      - /mnt/raid/salnikov/wikidata/:/data/wikidata
+      - /home/dale/data:/data/
     environment:
       - TOKENIZERS_PARALLELISM=false
-      - GAP_HOST=host.docker.internal
+      - GAP_HOST=gap
       - GAP_PORT=8089
-  gap:
-    build: ./gap
-    environment:
-      - TOKENIZERS_PARALLELISM=false
+    depends_on:
+      - gap
     deploy:
       resources:
           reservations:
@@ -23,3 +19,7 @@ services:
               - driver: nvidia
                 device_ids: ["1"]
                 capabilities: [gpu]
+  gap:
+    build: ./gap
+    environment:
+      - TOKENIZERS_PARALLELISM=false
