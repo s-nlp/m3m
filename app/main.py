@@ -8,8 +8,8 @@ from pywikidata import Entity
 from app.kgqa.graph2text import Graph2Text
 # from app.kgqa.m3m import M3MQA, EncoderBERT
 from app.kgqa.utils.graph_viz import SubgraphsRetriever, plot_graph_svg
-from app.kgqa.utils.utils import validate_or_search_entity_idx
-from app.models.base import Entity as EntityResponce, WikidataG2TRequest
+from app.kgqa.utils.utils import validate_or_search_entity_idx, validate_or_search_property_idx
+from app.models.base import Entity as EntityResponce, WikidataG2TRequest, WikidataG2TTriplesRequest
 from app.models.base import WikidataSSPRequest
 from app.pipelines import seq2seq
 from app.pipelines import act_selection
@@ -106,6 +106,46 @@ async def ssp_subgraph_description(request: WikidataG2TRequest) -> str:
     triplets = [(x, weight, y) for (x, y, weight) in graph.edges.data('label')]
     triplets = tuple(triplets)  # For cache
     graph_description = g2t(triplets, request.answer_idx, tuple(request.question_entities_idx), request.model)
+    return graph_description
+
+
+@app.post("/wikidata/entities/ssp/graph/description/triples")
+async def ssp_subgraph_description(request: WikidataG2TTriplesRequest) -> str:
+    g2t = Graph2Text()
+    triples_to_process = []
+    answer_id = ""
+    question_ids = set()
+    for triple in request.triples:
+        if len(triple) != 3:
+            raise HTTPException(status_code=400, detail=f"Bad input triple size: {triple}")
+
+        if triple[0].startswith("answer:"):
+            source = validate_or_search_entity_idx(triple[0][7:])
+            answer_id = source
+        elif triple[0].startswith("question:"):
+            source = validate_or_search_entity_idx(triple[2][9:])
+            question_ids.add(source)
+        else:
+            source = validate_or_search_entity_idx(triple[0])
+        if triple[2].startswith("answer:"):
+            destination = validate_or_search_entity_idx(triple[2][7:])
+            answer_id = destination
+        elif triple[2].startswith("question:"):
+            destination = validate_or_search_entity_idx(triple[2][9:])
+            question_ids.add(destination)
+        else:
+            destination = validate_or_search_entity_idx(triple[2])
+        validated_triple = (
+            source,
+            validate_or_search_property_idx(triple[1]),
+            destination,
+        )
+        if None in validated_triple:
+            raise HTTPException(status_code=400, detail=f"Bad input entities in triple: {triple}")
+        triples_to_process.append(validated_triple)
+
+    triplets = tuple(triples_to_process)  # For cache
+    graph_description = g2t(triplets, answer_id, tuple(question_ids), request.model)
     return graph_description
 
 

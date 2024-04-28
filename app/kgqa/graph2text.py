@@ -18,7 +18,12 @@ g2t_model = pipeline(
 class Graph2Text:
 
     @staticmethod
-    def __prepare_text(triplets: List[Tuple[str, str, str]], answer_id: str, question_ids: Tuple[str], model: G2TModels):
+    def __prepare_text(
+            triplets: List[Tuple[str, str, str]],
+            answer_id: str,
+            question_ids: Tuple[str | None],
+            model: G2TModels
+    ):
         graph = None
         triplets = list(map(lambda x: (Entity(x[0]), Entity(x[1]), Entity(x[2])), triplets))
         if model == G2TModels.T5_MODEL_NAME:
@@ -33,10 +38,11 @@ class Graph2Text:
         return graph
 
     @lru_cache(maxsize=1024)
-    def __call__(self, input_graph, answer_id: str, question_ids: Tuple[str], model: G2TModels):
+    def __call__(self, input_graph, answer_id: str, question_ids: Tuple[str | None], model: G2TModels):
         description = ""
         graph = self.__prepare_text(input_graph, answer_id, question_ids, model)
         if model == G2TModels.T5_MODEL_NAME:
+            print(graph)
             result = g2t_model(graph)
             description = result[0]['generated_text']
         elif model == G2TModels.GAP_MODEL_NAME:
@@ -49,7 +55,7 @@ class Graph2Text:
         return processed_description
 
     @staticmethod
-    def format_triplet_for_gap(triplet: Tuple[Entity], answer_id: str, question_ids: Tuple[str]):
+    def format_triplet_for_gap(triplet: Tuple[Entity], answer_id: str, question_ids: Tuple[str | None]):
         source_entity, relation, target_entity = triplet
         source_entity = {
             "label": source_entity.label,
