@@ -52,8 +52,16 @@ def is_valid_entity_idx(idx: str) -> bool:
     return len(idx) > 1 and idx[0].capitalize() == 'Q' and idx[1:].isdigit() and int(idx[1:]) > 0
 
 
+def is_valid_property_idx(idx: str) -> bool:
+    return len(idx) > 1 and idx[0].capitalize() == 'P' and idx[1:].isdigit() and int(idx[1:]) > 0
+
+
 def validate_or_search_entity_idx(idx: str) -> Optional[str]:
     return idx if is_valid_entity_idx(idx) else label_to_entity_idx_with_search(idx)
+
+
+def validate_or_search_property_idx(idx: str) -> Optional[str]:
+    return idx if is_valid_property_idx(idx) else label_to_entity_idx_with_search(idx)
 
 
 @memory.cache

@@ -62,6 +62,11 @@ class WikidataG2TRequest(BaseModel):
     model: G2TModels = G2TModels.T5_MODEL_NAME
 
 
+class WikidataG2TTriplesRequest(BaseModel):
+    triples: list[list[str]]
+    model: G2TModels = G2TModels.T5_MODEL_NAME
+
+
 class WikidataSSPRequest(BaseModel):
     question_entities_idx: list[str]
     answer_idx: str
