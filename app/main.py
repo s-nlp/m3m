@@ -8,8 +8,8 @@ from pywikidata import Entity
 from app.kgqa.graph2text import Graph2Text
 # from app.kgqa.m3m import M3MQA, EncoderBERT
 from app.kgqa.utils.graph_viz import SubgraphsRetriever, plot_graph_svg
-from app.kgqa.utils.utils import validate_or_search_entity_idx, validate_or_search_property_idx
-from app.models.base import Entity as EntityResponce, WikidataG2TRequest, WikidataG2TTriplesRequest
+from app.kgqa.utils.utils import validate_or_search_entity_idx, validate_or_search_property_idx, get_wd_entity_image
+from app.models.base import Entity as EntityResponce, WikidataG2TRequest, WikidataG2TTriplesRequest, WikidataSSPDescribedResponse
 from app.models.base import WikidataSSPRequest
 from app.pipelines import seq2seq
 from app.pipelines import act_selection
@@ -110,7 +110,7 @@ async def ssp_subgraph_description(request: WikidataG2TRequest) -> str:
 
 
 @app.post("/wikidata/entities/ssp/graph/description/triples")
-async def ssp_subgraph_description(request: WikidataG2TTriplesRequest) -> str:
+async def ssp_subgraph_description_triples(request: WikidataG2TTriplesRequest) -> str:
     g2t = Graph2Text()
     triples_to_process = []
     answer_id = ""
@@ -149,8 +149,7 @@ async def ssp_subgraph_description(request: WikidataG2TTriplesRequest) -> str:
     return graph_description
 
 
-@app.post("/wikidata/entities/ssp/graph/svg")
-async def ssp_subgraph_svg(request: WikidataSSPRequest) -> str:
+def __ssp_subgraph_svg(request: WikidataSSPRequest) -> str:
     sr = SubgraphsRetriever()
     verified_question_entities_idx = [validate_or_search_entity_idx(entity) for entity in request.question_entities_idx]
     verified_question_entities_idx = list(filter(lambda x: x is not None, verified_question_entities_idx))
@@ -160,5 +159,24 @@ async def ssp_subgraph_svg(request: WikidataSSPRequest) -> str:
 
     graph, _ = sr.get_subgraph(verified_question_entities_idx, verified_answer_idx)
     graph_svg = plot_graph_svg(graph)
-    return graph_svg.pipe(format='svg').replace(b'\n', b'')
+    return graph, graph_svg.pipe(format='svg').replace(b'\n', b'')
+
+
+@app.post("/wikidata/entities/ssp/graph/svg")
+async def ssp_subgraph_svg(request: WikidataSSPRequest) -> str:
+   _, svg = __ssp_subgraph_svg(request)
+   return svg
+
+@app.post("/wikidata/entities/ssp/graph/svg_described")
+async def ssp_subgraph_svg(request: WikidataSSPRequest) -> WikidataSSPDescribedResponse:
+    graph, svg = __ssp_subgraph_svg(request)
+    graph_nodes_previews = {}
+    for node_idx in graph:
+        image_url = get_wd_entity_image(node_idx)
+        if image_url is not None:
+            graph_nodes_previews[node_idx] = image_url
+    return WikidataSSPDescribedResponse(
+        svg=svg,
+        entity_photos=graph_nodes_previews
+    )
 

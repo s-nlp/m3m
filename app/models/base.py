@@ -70,3 +70,7 @@ class WikidataG2TTriplesRequest(BaseModel):
 class WikidataSSPRequest(BaseModel):
     question_entities_idx: list[str]
     answer_idx: str
+
+class WikidataSSPDescribedResponse(BaseModel):
+    svg: str
+    entity_photos: dict[str, str]

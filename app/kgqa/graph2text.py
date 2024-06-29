@@ -42,7 +42,6 @@ class Graph2Text:
         description = ""
         graph = self.__prepare_text(input_graph, answer_id, question_ids, model)
         if model == G2TModels.T5_MODEL_NAME:
-            print(graph)
             result = g2t_model(graph)
             description = result[0]['generated_text']
         elif model == G2TModels.GAP_MODEL_NAME:
