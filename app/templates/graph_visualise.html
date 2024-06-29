@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="flex justify-center my-60">
-    <div class="flex flex-col items-center justify-center max-w-4xl">
+<div class="flex justify-center my-60" style="position:relative;">
+    <div id="mainContainer" class="flex flex-col items-center justify-center max-w-4xl">
         <h2 class="text-center mb-4 pb-4 text-5xl leading-tight">Describe Graph!</h2>
         <div id="ask" class="sm:min-w-[30rem] m-0">
             <div class="relative w-[40rem]">
@@ -24,9 +24,10 @@
                 <div class="text-wrap" id="graphGAPDescription"></div>
             </div>
             <div id="graphLoader" class="my-16 self-center inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-e-transparent align-[-0.125em] text-surface motion-reduce:animate-[spin_1.5s_linear_infinite] dark:text-white" role="status" style="display: none"></div>
-    </div>
+        </div>
 
     <script src="https://code.jquery.com/jquery-3.6.3.js" integrity="sha256-nQLuAZGRRcILA+6dMBOvcRh5Pe310sBpanc6+QBmyVM=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.0.0/d3.min.js"></script>
     <script>
         function parseInput(inputText) {
             const arrowSplit = inputText.split("->");
@@ -52,7 +53,52 @@
             })
         }
 
+        var rem = function rem() {
+            var html = document.getElementsByTagName('html')[0];
+            return function () {
+                return parseInt(window.getComputedStyle(html)['fontSize']);
+            }
+        }();
+
+        function showEntityImage(src, x, y) {
+            $("#entityImage").attr("src", src);
+            const scroll = $("body").scrollTop();
+            const yWithScroll = y - 15 * rem() + scroll;
+            const yWithUpDownPosition = y > 200 ? yWithScroll - imageSizes[src] : yWithScroll;
+            $('#entityImageContainer').css({'left': x, 'top': yWithUpDownPosition});
+            $("#entityImageContainer").show();
+        }
+
+        function hideEntityImage() {
+            $("#entityImageContainer").hide()
+            $("#entityImage").removeAttr('src')
+        }
+
+        function preloadImages(arrayOfImages) {
+            $(arrayOfImages).each(function(){
+                const img = new Image();
+                const src = this;
+                img.src = this;
+                img.onload = function() {
+                    imageSizes[src] = 200 * this.height / this.width;
+                };
+            });
+        }
+
+        imageSizes = {};
+
         $(document).ready(function() {
+            let clientX = 0;
+            let clientY = 0;
+            $("body").mousemove(function(e) {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            })
+            $("#entityImageContainer").mouseleave(function(e){
+              if (!e.relatedTarget || !e.relatedTarget.id.startsWith('Q')) {
+                hideEntityImage();
+              }
+            })
             $("#submit").click(function() {
                 const inputText = $("#inputData").val();
                 const [dataForSvg, errorText] = parseInput(inputText);
@@ -72,18 +118,31 @@
                     $('#graphBox').hide();
                     $('#graphLoader').show();
                     $.when(
-                        apiCall(dataForSvg, '../wikidata/entities/ssp/graph/svg'),
+                        apiCall(dataForSvg, '../wikidata/entities/ssp/graph/svg_described'),
                         apiCall(dataForDescriptionT5, '../wikidata/entities/ssp/graph/description'),
                         apiCall(dataForDescriptionGAP, '../wikidata/entities/ssp/graph/description')
                     ).done(function(svgOutput, descriptionT5Output, descriptionGAPOutput) {
-                        const [svgData] = svgOutput;
+                        const [svgDataWithImages] = svgOutput;
+                        const {entity_photos, svg} = svgDataWithImages;
                         const [descriptionT5Data] = descriptionT5Output;
                         console.log(descriptionGAPOutput);
                         const [descriptionGAPData] = descriptionGAPOutput;
                         $('#graphBox').show();
                         $('#graphLoader').hide();
                         $('#graphImg').empty();
-                        $('#graphImg').append(String(svgData));
+                        $('#graphImg').append(String(svg));
+                        for (const [key, value] of Object.entries(entity_photos)) {
+                          console.log(key, value);
+                          $(`#${key}`).mouseenter(function(){
+                              showEntityImage(value, clientX, clientY);
+                          })
+                          $(`#${key}`).mouseleave(function(e){
+                              if (!e.relatedTarget || (e.relatedTarget.id !== "entityImage" && e.relatedTarget.id !== "entityImageBlur")) {
+                                  hideEntityImage();
+                              }
+                          })
+                        }
+                        preloadImages(Object.values(entity_photos));
                         $("#graphT5Description").text(descriptionT5Data);
                         $("#graphGAPDescription").text(descriptionGAPData);
                     }).fail(function(xhr, status, error) {
@@ -102,6 +161,8 @@
         });
     </script>
 </div>
-
+    <div id="entityImageContainer" style="position:absolute; display: none">
+        <img id="entityImage" style="width:200px;height:auto;" />
+    </div>
 
 {% endblock %}

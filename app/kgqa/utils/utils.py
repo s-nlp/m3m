@@ -1,6 +1,7 @@
 from typing import Optional
 
 import requests
+import hashlib
 from joblib import Memory
 from pywikidata import Entity
 from langdetect import detect
@@ -52,8 +53,16 @@ def is_valid_entity_idx(idx: str) -> bool:
     return len(idx) > 1 and idx[0].capitalize() == 'Q' and idx[1:].isdigit() and int(idx[1:]) > 0
 
 
+def is_valid_property_idx(idx: str) -> bool:
+    return len(idx) > 1 and idx[0].capitalize() == 'P' and idx[1:].isdigit() and int(idx[1:]) > 0
+
+
 def validate_or_search_entity_idx(idx: str) -> Optional[str]:
     return idx if is_valid_entity_idx(idx) else label_to_entity_idx_with_search(idx)
+
+
+def validate_or_search_property_idx(idx: str) -> Optional[str]:
+    return idx if is_valid_property_idx(idx) else label_to_entity_idx_with_search(idx)
 
 
 @memory.cache
@@ -100,3 +109,36 @@ def get_wd_search_results(
             break
 
     return results
+
+def get_wd_entity_image(
+    entity_idx: str,
+    mediawiki_api_url: str = "https://www.wikidata.org/w/api.php",
+    user_agent: str = None,
+):
+    user_agent = "pywikidata" if user_agent is None else user_agent
+    headers = {
+        'User-Agent': user_agent
+    }
+    params = {
+        'action': 'wbgetclaims',
+        'property': 'P18',
+        'entity': entity_idx,
+        'format': 'json'
+    }
+    # According to https://stackoverflow.com/a/34402875
+    reply = requests.get(mediawiki_api_url, params=params, headers=headers)
+    reply.raise_for_status()
+    reply_json = reply.json()
+    property_info = reply_json.get("claims", {}).get("P18", [{}])
+    # prevent empty arrays
+    if len(property_info) == 0:
+        return None
+    image_name = property_info[0].get("mainsnak", {}).get("datavalue", {}).get("value")
+    if image_name is None:
+        return None
+    image_name = image_name.replace(" ", "_")
+    image_name_md5 = hashlib.md5(image_name.encode()).hexdigest()
+    image_link = f"https://upload.wikimedia.org/wikipedia/commons/{image_name_md5[:1]}/{image_name_md5[:2]}/{image_name}"
+
+    return image_link
+
