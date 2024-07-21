@@ -13,7 +13,7 @@ from app.models.base import Entity as EntityResponce, WikidataG2TRequest, Wikida
 from app.models.base import WikidataSSPRequest
 from app.pipelines import seq2seq
 from app.pipelines import act_selection
-# from app.pipelines import m3m
+from app.pipelines import m3m
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -38,7 +38,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 app.include_router(act_selection.router)
 app.include_router(seq2seq.router)
-# app.include_router(m3m.router)
+app.include_router(m3m.router)
 
 
 @app.get("/", response_class=HTMLResponse)

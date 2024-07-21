@@ -90,25 +90,20 @@
             }
         }
         
-        function process_pipeline_data(pipeline_data) {
-            const queryString = window.location.search;
-            const urlParams = new URLSearchParams(queryString);
-            const pipeline = urlParams.get('pipeline');
-
+        function process_pipeline_data(pipeline_data, pipeline) {
             graph_svg = $(document.createElement('div')).addClass("my-3");
             $("#details").append(graph_svg);
 
-            if (pipeline == 'm3m' || pipeline == 'm3m_subj_question_matching') {
+            if (pipeline === 'm3m' || pipeline === 'm3m_subj_question_matching') {
                 $("#details").append(
                     "<b>"+m3m_uncertanity_to_decision(pipeline_data['uncertenity'])+"</b>"
                 );
             }
-
-            if (pipeline == 'act_selection' || pipeline == 'act_selection_simple' || pipeline == 'act_selection_simple_description') {
+            if (pipeline === 'seq2seq' || pipeline === 'act_selection' || pipeline === 'act_selection_simple' || pipeline === 'act_selection_simple_description') {
                 question_entities = $(document.createElement('div'));
                 question_entities.append('Question entities: ');
                 pipeline_data['question_entities'].forEach(obj => {
-                    let entity_idx = obj['entity'];
+                    let entity_idx = pipeline === 'seq2seq' ? obj : obj['entity'];
                     $.ajax({
                         url: 'wikidata/entities/' + entity_idx + '/label',
                         method: 'GET',
@@ -121,43 +116,45 @@
                 });
                 $("#details").append(question_entities);
 
-                answer_instance_of = $('<div class="m-1">Final Instance Of: </div>');
-                answer_instance_of_count = $('<table class="table-auto"></table>');
-                th = $(document.createElement('thead'))
-                th.append('<tr class="border-b"><th>Instance Of Entity</th><th>Count</th></tr>');
-                answer_instance_of_count.append(th);
-                answer_instance_of_count_body = $("<tbody></tbody>");
-                answer_instance_of_count.append(answer_instance_of_count_body);
+                if (pipeline !== 'seq2seq') {
+                    answer_instance_of = $('<div>Final Instance Of: </div>');
+                    answer_instance_of_count = $('<table class="table-auto"></table>');
+                    th = $(document.createElement('thead'))
+                    th.append('<tr class="border-b"><th>Instance Of Entity</th><th>Count</th></tr>');
+                    answer_instance_of_count.append(th);
+                    answer_instance_of_count_body = $("<tbody></tbody>");
+                    answer_instance_of_count.append(answer_instance_of_count_body);
 
-                $("#details").append(answer_instance_of);
-                $("#details").append(answer_instance_of_count);
+                    $("#details").append(answer_instance_of);
+                    $("#details").append(answer_instance_of_count);
 
-                Object.entries(pipeline_data['answer_instance_of_count']).forEach(function(entry, idx, _) {
-                    const [entity_idx, count] = entry;
-                    $.ajax({
-                        url: 'wikidata/entities/' + entity_idx + '/label',
-                        method: 'GET',
-                        dataType: 'json',
-                        cache: true,
-                        success: function(edata) {
-                            tr = $(document.createElement('tr'));
-                            tr.addClass('border-b');
-                            tr.addClass('answer_instance_of_item');
-                            tr.append("<td>" + one_instace_of_to_html(entity_idx, edata['label']) + "</td>");
-                            tr.append("<td>" + String(count) + "</td>");
-                            tr.attr('order', 10000000 - count);
-                            answer_instance_of_count_body.append(tr);
-                            
-                            if (pipeline_data['answer_instance_of'].includes(entity_idx)) {
-                                answer_instance_of.append(one_instace_of_to_html(entity_idx, edata['label'])); 
+                    Object.entries(pipeline_data['answer_instance_of_count']).forEach(function (entry, idx, _) {
+                        const [entity_idx, count] = entry;
+                        $.ajax({
+                            url: 'wikidata/entities/' + entity_idx + '/label',
+                            method: 'GET',
+                            dataType: 'json',
+                            cache: true,
+                            success: function (edata) {
+                                tr = $(document.createElement('tr'));
+                                tr.addClass('border-b');
+                                tr.addClass('answer_instance_of_item');
+                                tr.append("<td>" + one_instace_of_to_html(entity_idx, edata['label']) + "</td>");
+                                tr.append("<td>" + String(count) + "</td>");
+                                tr.attr('order', 10000000 - count);
+                                answer_instance_of_count_body.append(tr);
+
+                                if (pipeline_data['answer_instance_of'].includes(entity_idx)) {
+                                    answer_instance_of.append(one_instace_of_to_html(entity_idx, edata['label']));
+                                }
+                            },
+                            complete: function (edata) {
+                                let instance_of_count_objcts = getSorted('.answer_instance_of_item', 'order');
+                                instance_of_count_objcts.detach().appendTo(answer_instance_of_count_body);
                             }
-                        },
-                        complete: function(edata) {
-                            let instance_of_count_objcts = getSorted('.answer_instance_of_item', 'order');
-                            instance_of_count_objcts.detach().appendTo(answer_instance_of_count_body);
-                        }
-                    })
-                });
+                        })
+                    });
+                }
             }
 
             answers = [];
@@ -213,39 +210,55 @@
                             $("#top_answer_card").append(body);
                             
                             if (
-                                pipeline == 'act_selection' || 
-                                pipeline == 'act_selection_simple' || 
-                                pipeline == 'act_selection_simple_description' || 
-                                pipeline == 'm3m' ||
-                                pipeline == 'm3m_subj_question_matching'
+                                pipeline === 'seq2seq' ||
+                                pipeline === 'act_selection' ||
+                                pipeline === 'act_selection_simple' ||
+                                pipeline === 'act_selection_simple_description' ||
+                                pipeline === 'm3m' ||
+                                pipeline === 'm3m_subj_question_matching'
                             ) {
                                 let question_entities_idx = [];
-                                if (pipeline == 'act_selection' || pipeline == 'act_selection_simple' || pipeline == 'act_selection_simple_description') {
+                                if (pipeline === 'act_selection' || pipeline === 'act_selection_simple' || pipeline === 'act_selection_simple_description') {
                                     pipeline_data['question_entities'].forEach(obj => {
                                         question_entities_idx.push(String(obj["entity"]));
+                                    })
+                                } else if (pipeline === 'seq2seq') {
+                                    pipeline_data['question_entities'].forEach(idx => {
+                                        question_entities_idx.push(String(idx));
                                     })
                                 } else {
                                     question_entities_idx.push(pipeline_data['triples'][0][0]);
                                 }
-                                $.ajax({
-                                    url: '/wikidata/entities/ssp/graph/svg',
-                                    method: 'POST',
-                                    data: JSON.stringify({question_entities_idx: question_entities_idx, answer_idx: String(data['idx'])}),
-                                    contentType: "application/json",
-                                    dataType: 'json',
-                                    cache: true,
-                                    beforeSend: function() {
-                                        if ( $( "#loading_spinner2" ).length < 1) {
-                                            graph_svg.append(loading_spinner(2));
-                                        }
-                                    },
-                                    success: function (svg_data) {
-                                        graph_svg.append(String(svg_data));
-                                    },
-                                    complete: function() {
-                                        $("#loading_spinner2").remove();
-                                    },
-                                });
+                                const problem_text = question_entities_idx.length === 0 ? "Can't visualize graph\nNo question entities detected" : "";
+                                if (problem_text) {
+                                    pre = $(document.createElement('pre'));
+                                    pre.text(problem_text);
+                                    graph_svg.append(pre);
+                                } else {
+                                    graph_svg.empty();
+                                    $.ajax({
+                                        url: '/wikidata/entities/ssp/graph/svg',
+                                        method: 'POST',
+                                        data: JSON.stringify({
+                                            question_entities_idx: question_entities_idx,
+                                            answer_idx: String(data['idx'])
+                                        }),
+                                        contentType: "application/json",
+                                        dataType: 'json',
+                                        cache: true,
+                                        beforeSend: function () {
+                                            if ($("#loading_spinner2").length < 1) {
+                                                graph_svg.append(loading_spinner(2));
+                                            }
+                                        },
+                                        success: function (svg_data) {
+                                            graph_svg.append(String(svg_data));
+                                        },
+                                        complete: function () {
+                                            $("#loading_spinner2").remove();
+                                        },
+                                    });
+                                }
                             }
                         }
         
@@ -301,6 +314,12 @@
         }
 
         $(document).ready(function() {
+            const queryString = window.location.search;
+            const urlParams = new URLSearchParams(queryString);
+            const pipeline = urlParams.get('pipeline');
+            if (!pipeline) {
+                window.location.replace(`${window.location.href}&pipeline=seq2seq`);
+            }
             $.ajax({
                 url: '/pipeline/' + pipeline_switcher('{{pipeline}}') + '/',
                 method: 'POST',
@@ -309,7 +328,7 @@
                 dataType: 'json',
                 cache: true,
                 success: function (data) {
-                    process_pipeline_data(data);
+                    process_pipeline_data(data, pipeline);
                 },
             })
         })
