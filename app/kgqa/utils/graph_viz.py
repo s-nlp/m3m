@@ -560,11 +560,11 @@ def plot_graph_svg(graph):
         node_label = Entity(node_idx).label
 
         if type_node == SubgraphNodeType.ANSWER_CANDIDATE_ENTITY:
-            viz_graph.node(f"{node_label}\n({node_idx})", color="coral", style="filled")
+            viz_graph.node(f"{node_label}\n({node_idx})", color="coral", style="filled", id=node_idx, href=f"https://www.wikidata.org/wiki/{node_idx}")
         elif type_node == SubgraphNodeType.QUESTIONS_ENTITY:
-            viz_graph.node(f"{node_label}\n({node_idx})", color="deepskyblue", style="filled")
+            viz_graph.node(f"{node_label}\n({node_idx})", color="deepskyblue", style="filled", id=node_idx, href=f"https://www.wikidata.org/wiki/{node_idx}")
         else:
-            viz_graph.node(f"{node_label}\n({node_idx})", color="lightgrey", style="filled")
+            viz_graph.node(f"{node_label}\n({node_idx})", color="lightgrey", style="filled", id=node_idx, href=f"https://www.wikidata.org/wiki/{node_idx}")
 
     for edge in graph.edges:
         n1 = f"{Entity(edge[0]).label}\n({edge[0]})"
@@ -587,7 +587,9 @@ def plot_graph_svg(graph):
         viz_graph.edge(
             n1,
             n2,
+            id=prop,
             label=f'{edge_label}',
+            href=f"https://www.wikidata.org/wiki/Property:{prop}",
         )
 
     return viz_graph
