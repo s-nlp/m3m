@@ -4,7 +4,7 @@ seq2seq = {
     "model": {
         "path": os.environ.get(
             "SEQ2SEQ_MODEL_PATH",
-            "msalnikov/kgqa_sqwd-tunned_t5-large-ssm-nq",
+            "s-nlp/t5_large_ssm_nq_mintaka",
         ),
         "route_postfix": "sqwd_tunned/t5_large_ssm_nq",
     },
