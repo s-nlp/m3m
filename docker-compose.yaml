@@ -23,3 +23,5 @@ services:
     build: ./gap
     environment:
       - TOKENIZERS_PARALLELISM=false
+    ports:
+        - 8084:8082

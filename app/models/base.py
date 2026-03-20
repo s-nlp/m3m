@@ -20,6 +20,10 @@ class PipelineResponce(BaseModel):
     answers: list[str]
 
 
+class Seq2SeqPipelineResponce(PipelineResponce):
+    question_entities: list[str]
+
+
 class EntityNeighboursResponce(BaseModel):
     entity: str
     property: str

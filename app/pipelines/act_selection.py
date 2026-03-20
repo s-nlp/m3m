@@ -2,21 +2,13 @@ from functools import lru_cache
 
 from fastapi import APIRouter
 from joblib import Parallel, delayed
-from pywikidata import Entity
 
 from app.kgqa.act_selection import QuestionToRankInstanceOf, QuestionToRankInstanceOfSimple, QuestionToRankInstanceOfSimpleWithDescriptionMatching
-from app.kgqa.entity_linking import EntitiesSelection
-from app.kgqa.mgenre import build_mgenre_pipeline
-from app.kgqa.ner import NerToSentenceInsertion
+from app.kgqa.entity_linking import ner, mgenre, entity_selection, entity_linker
 from app.kgqa.utils.utils import get_wd_search_results
-from app.models.base import Entity as EntityResponce
 from app.models.base import Question as QuestionRequest
 from app.models.base import ACTPipelineResponce, ACTPipelineResponceWithDescriptionScore, QuestionEntitiesResponce, EntityNeighboursResponce
 from app.pipelines.seq2seq import seq2seq
-
-ner = NerToSentenceInsertion("/data/ner/")
-mgenre = build_mgenre_pipeline()
-entity_selection = EntitiesSelection(ner.model)
 
 
 router = APIRouter(
@@ -53,15 +45,7 @@ def raw_seq2seq(question: str) -> list[str]:
 
 
 def _prepare_question_entities_and_answer_candidate_helper(question: QuestionRequest):
-    question_wit_ner, all_question_entities = ner.entity_labeling(question.text, True)
-    mgenre_predicted_entities = mgenre(question_wit_ner)
-    question_entities = entity_selection(
-        all_question_entities, mgenre_predicted_entities
-    )
-
-    question_entities = [get_wd_search_results(label, 1)[0] for label in question_entities]
-    question_entities = [idx for idx in question_entities if idx is not None]
-
+    question_entities = entity_linker.extract_entities_from_question(question.text)
     seq2seq_results = seq2seq(question.text)
     answers_candidates = Parallel(n_jobs=-2)(
         delayed(get_wd_search_results)(label, 1) for label in seq2seq_results
@@ -72,7 +56,7 @@ def _prepare_question_entities_and_answer_candidate_helper(question: QuestionReq
 
 
 @lru_cache(maxsize=1024)
-@router.post("/main")
+@router.post("/main/")
 def pipeline(question: QuestionRequest) -> ACTPipelineResponce:
     question_entities, answers_candidates = _prepare_question_entities_and_answer_candidate_helper(question)
 
